@@ -1,0 +1,745 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="배경 그라데이션, 타이틀, 이미지 10장, 사용 툴만 넣으면 움직이는 배경의 미니 포트폴리오 HTML을 만들어 주는 도구">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Minifolio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..700&family=Geist+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@300;400;500;600&display=swap">
+<style>
+/* Layout: one-screen studio app — settings rail on the left, live device stage on the right. Single dark look by choice. */
+:root{
+  --bg:#0c0d10; --panel:#121317; --raise:#191b20; --line:#23262d; --line-2:#30343c;
+  --fg:#eef0f3; --muted:#8c919c; --faint:#5b606a; --hi:#ffffff; --warn:#ff9f8a;
+  --sans:'Geist','IBM Plex Sans KR',system-ui,-apple-system,'Apple SD Gothic Neo',sans-serif;
+  --mono:'Geist Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:13px;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--hi);outline-offset:2px}
+
+.app{height:100%;display:grid;grid-template-rows:auto 1fr;min-height:0}
+.top{display:flex;align-items:center;gap:12px;padding-block:12px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:15px;letter-spacing:-.02em;margin-right:auto}
+.brand-dot{width:18px;height:18px;border-radius:50%;background:var(--dot,conic-gradient(#ffb59e,#c9d6ff,#f4a6c8,#ffd6a5,#ffb59e));box-shadow:0 0 0 1px rgba(255,255,255,.12) inset;animation:spin 9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.brand small{font:500 10px var(--mono);color:var(--faint);letter-spacing:.08em;text-transform:uppercase;font-weight:400}
+.status{font:400 11px var(--mono);color:var(--faint);letter-spacing:.02em}
+.seg{display:flex;background:var(--raise);border:1px solid var(--line);border-radius:999px;padding:3px}
+.seg button{background:none;border:0;padding:6px 12px;border-radius:999px;color:var(--muted);font-size:12px;font-weight:500}
+.seg button[aria-pressed="true"]{background:var(--line-2);color:var(--hi)}
+.btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line-2);background:var(--raise);border-radius:999px;padding:8px 14px;font-size:12px;font-weight:500;color:var(--fg)}
+.btn:hover{border-color:#454a54}
+.btn-primary{background:var(--hi);color:#0c0d10;border-color:var(--hi)}
+.btn-primary:hover{background:#e7e9ee}
+.btn-ghost{background:none;border-color:transparent;color:var(--muted)}
+.btn-ghost:hover{color:var(--fg);border-color:var(--line-2)}
+
+.work{display:grid;grid-template-columns:372px 1fr;min-height:0}
+.app.focus .work{grid-template-columns:0 1fr}
+.app.focus .panel{visibility:hidden}
+.panel{border-right:1px solid var(--line);overflow-y:auto;overflow-x:hidden;min-height:0;background:var(--panel)}
+.sec{padding:22px 20px;border-bottom:1px solid var(--line);display:grid;gap:14px}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.sec-h h2{margin:0;font-size:13px;font-weight:600;letter-spacing:-.01em}
+.sec-h span{font:400 11px var(--mono);color:var(--faint)}
+.lbl{font:500 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.field{display:grid;gap:7px}
+.inp{width:100%;background:var(--raise);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.5;resize:vertical}
+.inp:focus{border-color:#4a4f59;outline:none}
+.inp::placeholder{color:var(--faint)}
+.count{justify-self:end;font:400 10.5px var(--mono);color:var(--faint)}
+
+.swatches{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.sw{background:none;border:0;padding:0;display:grid;gap:6px;justify-items:center;color:var(--muted);font-size:11px}
+.sw i{display:block;width:100%;aspect-ratio:1;border-radius:14px;box-shadow:0 0 0 1px rgba(255,255,255,.08) inset;transition:transform .2s}
+.sw:hover i{transform:translateY(-1px)}
+.sw[aria-pressed="true"]{color:var(--hi)}
+.sw[aria-pressed="true"] i{box-shadow:0 0 0 2px var(--panel),0 0 0 3.5px var(--hi)}
+.sw-custom i{background:repeating-linear-gradient(135deg,var(--raise) 0 6px,var(--line) 6px 12px);display:grid;place-items:center;font-size:16px;color:var(--muted);font-style:normal}
+.custom{display:grid;gap:12px;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--raise)}
+.colors{display:flex;gap:8px;flex-wrap:wrap}
+.col{display:grid;gap:5px;justify-items:center;font:400 10px var(--mono);color:var(--faint)}
+.col input{width:40px;height:40px;border:1px solid var(--line-2);border-radius:10px;padding:0;background:none;cursor:pointer}
+.col input::-webkit-color-swatch-wrapper{padding:3px}
+.col input::-webkit-color-swatch{border:0;border-radius:7px}
+.row{display:flex;align-items:center;gap:10px;justify-content:space-between}
+.range{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px}
+.range output{font:400 11px var(--mono);color:var(--muted);min-width:34px;text-align:right}
+input[type=range]{width:100%;accent-color:var(--hi)}
+.toggle{display:inline-flex;align-items:center;gap:8px;color:var(--muted);font-size:12px;cursor:pointer}
+.toggle input{accent-color:var(--hi);width:15px;height:15px}
+
+.slots{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.slot{position:relative;aspect-ratio:1;border-radius:10px;border:1px dashed var(--line-2);background:var(--raise);display:grid;place-items:center;color:var(--faint);overflow:hidden;padding:0;transition:border-color .15s,transform .15s}
+.slot:hover{border-color:#525865;color:var(--fg)}
+.slot.filled{border-style:solid;border-color:var(--line);cursor:grab}
+.slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.slot .n{position:absolute;left:6px;top:5px;font:500 9.5px var(--mono);letter-spacing:.04em;z-index:1}
+.slot.filled .n{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.slot .plus{font-size:18px;font-weight:300}
+.slot .x{position:absolute;right:4px;top:4px;width:20px;height:20px;border-radius:50%;border:0;background:rgba(12,13,16,.78);color:#fff;font-size:12px;line-height:20px;display:none;z-index:2;padding:0}
+.slot.filled:hover .x,.slot.filled:focus-within .x{display:block}
+.slot .tag{position:absolute;left:5px;bottom:5px;font:500 8.5px var(--mono);letter-spacing:.06em;background:rgba(12,13,16,.72);color:#d9dbe0;padding:2px 5px;border-radius:4px;z-index:1}
+.slot.over{border-color:var(--hi);transform:scale(.97)}
+.slot.sel{box-shadow:0 0 0 2px var(--panel),0 0 0 3.5px var(--hi)}
+.slot .dot{position:absolute;right:6px;bottom:6px;width:7px;height:7px;border-radius:50%;background:#7ee0b0;box-shadow:0 0 0 2px rgba(12,13,16,.6);z-index:1}
+.proj{display:grid;gap:14px;padding:16px;border:1px solid var(--line-2);border-radius:14px;background:var(--raise)}
+.proj-h{display:grid;grid-template-columns:52px 1fr;gap:12px;align-items:center}
+.proj-h img{width:52px;height:52px;border-radius:9px;object-fit:cover}
+.proj-h b{display:block;font-size:13px;font-weight:600}
+.proj-h span{font-size:11.5px;color:var(--muted)}
+.proj .inp{background:var(--panel)}
+.res-rows{display:grid;gap:6px}
+.res-row{display:grid;grid-template-columns:84px 1fr;gap:6px}
+.proj-act{display:flex;gap:8px;flex-wrap:wrap}
+.tip{font-size:11px;color:var(--faint);line-height:1.5;margin:0}
+.slot.dragging{opacity:.35}
+.hint{font-size:11.5px;color:var(--muted);line-height:1.55;margin:0}
+.notice{display:flex;gap:10px;align-items:center;justify-content:space-between;font-size:11.5px;color:var(--muted);padding:10px 12px;border-radius:10px;background:var(--raise);border:1px solid var(--line)}
+.notice b{color:var(--fg);font-weight:500}
+.linkbtn{background:none;border:0;color:var(--hi);font-size:11.5px;font-weight:500;padding:0;text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
+
+.tools{display:grid;gap:8px}
+.tool{display:grid;grid-template-columns:40px 1fr 28px;gap:10px;align-items:center}
+.logo-btn{width:40px;height:40px;border-radius:10px;border:1px dashed var(--line-2);background:var(--raise);display:grid;place-items:center;padding:0;overflow:hidden;color:var(--faint);font:500 10px var(--mono)}
+.logo-btn.has{border-style:solid;border-color:var(--line);background:#fff}
+.logo-btn img,.logo-btn svg{width:62%;height:62%;object-fit:contain}
+.chip svg{width:12px;height:12px;margin-right:6px}
+.chip{display:inline-flex;align-items:center}
+.del{width:28px;height:28px;border-radius:8px;border:0;background:none;color:var(--faint);font-size:15px;padding:0}
+.del:hover{background:var(--raise);color:var(--fg)}
+.quick{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:none;border-radius:999px;padding:5px 10px;font-size:11.5px;color:var(--muted)}
+.chip:hover{border-color:var(--line-2);color:var(--fg)}
+.chip:disabled{opacity:.35;cursor:default}
+
+.stage{position:relative;min-height:0;display:grid;place-items:center;padding:20px 20px 34px;background:
+  radial-gradient(circle at 1px 1px,#1b1d22 1px,transparent 0) 0 0/18px 18px,var(--bg);overflow:hidden}
+.device{position:relative;width:100%;height:100%;max-width:1400px;border-radius:14px;overflow:hidden;box-shadow:0 0 0 1px rgba(255,255,255,.06),0 30px 80px -20px rgba(0,0,0,.7);transition:max-width .45s cubic-bezier(.2,.7,.2,1),border-radius .45s}
+.device[data-mode="mobile"]{max-width:390px;max-height:844px;border-radius:34px;box-shadow:0 0 0 1px rgba(255,255,255,.1),0 0 0 9px #17181c,0 0 0 10px #2a2d33,0 40px 90px -20px rgba(0,0,0,.8)}
+.stage-cap{position:absolute;left:20px;bottom:10px;font:400 10.5px var(--mono);color:var(--faint);letter-spacing:.04em}
+
+.sheet{position:fixed;inset:0;background:rgba(6,7,9,.7);backdrop-filter:blur(6px);display:grid;place-items:center;padding:20px;z-index:50}
+.sheet-card{width:min(560px,100%);background:var(--panel);border:1px solid var(--line-2);border-radius:16px;padding:22px;display:grid;gap:14px}
+.sheet-card h3{margin:0;font-size:15px;font-weight:600}
+.sheet-card p{margin:0;color:var(--muted);line-height:1.6;font-size:12.5px}
+.sheet-card textarea{height:160px;font:400 11px var(--mono)}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--hi);color:#0c0d10;padding:9px 16px;border-radius:999px;font-size:12px;font-weight:500;z-index:60;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+
+/* tool-only overrides so the portfolio runs inside the device frame */
+.device .pf-bg,.device .pf-grain,.device .pf-lb{position:absolute}
+.device .pf-scroll{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden}
+
+@media (max-width:900px){
+  html,body{height:auto}
+  .app{height:auto}
+  .work{grid-template-columns:1fr}
+  .app.focus .work{grid-template-columns:1fr}
+  .app.focus .panel{display:none}
+  .panel{border-right:0;overflow:visible}
+  .stage{height:82vh;padding:12px}
+  .top{flex-wrap:wrap}
+  .status{display:none}
+  .hide-sm{display:none}
+}
+@media (prefers-reduced-motion:reduce){.brand-dot{animation:none}*{transition:none!important}}
+</style>
+<style id="pf-css"></style>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="top">
+    <div class="brand"><span class="brand-dot" id="brandDot"></span>Minifolio <small class="hide-sm">mini portfolio maker</small></div>
+    <span class="status" id="status">자동 저장</span>
+    <div class="seg" role="group" aria-label="미리보기 크기">
+      <button id="dDesk" aria-pressed="true">Desktop</button>
+      <button id="dMob" aria-pressed="false">Mobile</button>
+    </div>
+    <button class="btn btn-ghost" id="focusBtn" aria-pressed="false">미리보기만</button>
+    <button class="btn btn-primary" id="exportBtn">HTML 내보내기</button>
+  </header>
+
+  <div class="work">
+    <aside class="panel" aria-label="설정">
+      <section class="sec">
+        <div class="sec-h"><h2>배경</h2><span>Ambient gradient</span></div>
+        <div class="swatches" id="swatches"></div>
+        <div class="custom" id="custom" hidden>
+          <div class="lbl">커스텀 컬러</div>
+          <div class="colors" id="customColors"></div>
+          <div class="row">
+            <span class="lbl">글자색</span>
+            <div class="seg" role="group" aria-label="글자색">
+              <button data-ink="auto" aria-pressed="true">자동</button>
+              <button data-ink="dark" aria-pressed="false">어둡게</button>
+              <button data-ink="light" aria-pressed="false">밝게</button>
+            </div>
+          </div>
+        </div>
+        <div class="range">
+          <span class="lbl">속도</span>
+          <input type="range" id="speed" min="0" max="2.5" step="0.1" value="1" aria-label="움직임 속도">
+          <output id="speedOut">1.0×</output>
+        </div>
+        <label class="toggle"><input type="checkbox" id="grain" checked> 필름 그레인 질감</label>
+      </section>
+
+      <section class="sec">
+        <div class="sec-h"><h2>타이틀</h2><span>Hero</span></div>
+        <div class="field">
+          <label class="lbl" for="title">포폴 타이틀</label>
+          <input class="inp" id="title" maxlength="60" placeholder="예: Selected Works">
+        </div>
+        <div class="field">
+          <label class="lbl" for="sub">서브카피</label>
+          <textarea class="inp" id="sub" rows="3" maxlength="180" placeholder="어떤 디자이너인지 한두 문장으로"></textarea>
+          <span class="count" id="subCount">0 / 180</span>
+        </div>
+      </section>
+
+      <section class="sec">
+        <div class="sec-h"><h2>이미지</h2><span id="imgCount">0 / 10</span></div>
+        <div class="notice" id="sampleNote" hidden><span><b>샘플 이미지</b>가 들어가 있어요. 내 작업으로 바꿔 주세요.</span><button class="linkbtn" id="clearSamples">샘플 비우기</button></div>
+        <div class="slots" id="slots"></div>
+        <p class="hint">빈 칸을 눌러 올리거나 파일을 끌어다 놓으세요. 여러 장을 고르면 빈 칸부터 채워지고, 칸끼리 드래그하면 순서가 바뀝니다. <b style="color:var(--fg);font-weight:500">올린 이미지를 누르면 아래에서 프로젝트 정보</b>(역할·업무·성과)를 쓸 수 있어요.</p>
+        <div id="proj"></div>
+        <input type="file" id="imgFile" accept="image/*" multiple hidden>
+      </section>
+
+      <section class="sec">
+        <div class="sec-h"><h2>사용 툴</h2><span id="toolCount">0</span></div>
+        <div class="tools" id="tools"></div>
+        <div class="field">
+          <span class="lbl">빠른 추가</span>
+          <div class="quick" id="quick"></div>
+        </div>
+        <div class="row"><button class="btn" id="addTool">+ 직접 추가</button><div class="seg" role="group" aria-label="로고 색"><button data-lc="brand" aria-pressed="true">브랜드 컬러</button><button data-lc="mono" aria-pressed="false">모노</button></div></div>
+        <p class="hint">Figma·Blender·Framer 등 30여 개 툴은 이름만 입력하면 로고가 자동으로 붙어요. Adobe 계열처럼 목록에 없는 툴은 이니셜로 표시되니, 왼쪽 칸을 눌러 로고 파일(SVG·PNG)을 올려 주세요.</p>
+        <input type="file" id="logoFile" accept="image/*" hidden>
+      </section>
+    </aside>
+
+    <main class="stage">
+      <div class="device pf-frame" id="device" data-mode="desktop">
+        <canvas class="pf-bg" id="pfBg" aria-hidden="true"></canvas>
+        <div class="pf-grain" id="pfGrain" aria-hidden="true"></div>
+        <div class="pf-scroll" id="pfScroll"></div>
+        <div class="pf-lb" role="dialog" aria-modal="true" aria-label="프로젝트 상세"><div class="pf-lb-top"><span class="pf-lb-count"></span><button class="pf-lb-x" data-lb="close" aria-label="닫기"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg></button></div><div class="pf-d-body"></div><div class="pf-lb-bar"><button data-lb="prev">&larr; Prev</button><button data-lb="next">Next &rarr;</button></div></div>
+      </div>
+      <span class="stage-cap hide-sm">Live preview — 내보낸 HTML과 동일하게 동작합니다</span>
+    </main>
+  </div>
+</div>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="sheet-card">
+    <h3>HTML 코드 복사</h3>
+    <p>이 화면에서는 파일 저장을 쓸 수 없어요. 아래 코드를 복사해 <b>index.html</b>로 저장하면 그대로 열립니다. 이미지가 코드 안에 포함되어 있어 길이가 깁니다.</p>
+    <textarea class="inp" id="codeOut" readonly></textarea>
+    <div class="row"><button class="btn btn-ghost" id="sheetClose">닫기</button><button class="btn btn-primary" id="copyCode">코드 복사</button></div>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* ================= Portfolio engine (shared by preview + export) ================= */
+var PF_CSS = [
+".pf-frame{margin:0;color:var(--pf-ink);font-family:'Geist','IBM Plex Sans KR',system-ui,-apple-system,'Apple SD Gothic Neo',sans-serif;-webkit-font-smoothing:antialiased;background:var(--pf-base)}",
+".pf-bg{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:0}",
+".pf-grain{position:fixed;inset:-50%;z-index:1;pointer-events:none;opacity:var(--pf-grain,.14);mix-blend-mode:overlay;background-image:url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 1.4 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")}",
+".pf-scroll{position:relative;z-index:2;container-type:inline-size;min-height:100%}",
+".pf-main{max-width:1480px;margin:0 auto;padding-left:max(20px,4.2cqw,env(safe-area-inset-left,0px));padding-right:max(20px,4.2cqw,env(safe-area-inset-right,0px))}",
+".pf-top{display:flex;justify-content:space-between;gap:16px;padding-block:max(22px,2.2cqw);font:500 11px/1.4 'Geist Mono',ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}",
+".pf-top span:first-child{max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+".pf-top span:last-child{color:var(--pf-ink-2)}",
+".pf-hero{padding-block:clamp(64px,13cqw,220px) clamp(48px,8cqw,140px)}",
+".pf-title{margin:0;font-size:clamp(46px,10cqw,176px);line-height:.94;letter-spacing:-.048em;font-weight:500;text-wrap:balance;max-width:13ch;word-break:keep-all;animation:pfRise 1.1s cubic-bezier(.2,.7,.2,1) both}",
+".pf-sub{margin:clamp(22px,2.6cqw,40px) 0 0;font-size:clamp(20px,calc(1.5cqw + 4px),25px);line-height:1.55;font-weight:400;max-width:32em;color:var(--pf-ink-2);text-wrap:pretty;word-break:keep-all;white-space:pre-line;animation:pfRise 1.1s .12s cubic-bezier(.2,.7,.2,1) both}",
+"@keyframes pfRise{from{transform:translateY(14px)}to{transform:none}}",
+".pf-works{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:max(10px,1.1cqw)}",
+".pf-w{margin:0;grid-column:span var(--s);height:var(--h);border-radius:max(6px,.5cqw);overflow:hidden;position:relative;background:var(--pf-glass);cursor:zoom-in;box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 24px 60px -30px rgba(0,0,0,.35)}",
+".pf-w img{display:block;width:100%;height:100%;object-fit:cover;transition:transform 1.4s cubic-bezier(.2,.7,.2,1)}",
+".pf-w:hover img{transform:scale(1.035)}",
+".pf-w:focus-visible{outline:2px solid var(--pf-ink);outline-offset:3px}",
+".pf-empty{grid-column:1/-1;padding:56px 24px;border:1px dashed var(--pf-line);border-radius:12px;text-align:center;color:var(--pf-ink-2);font-size:14px}",
+".pf-tools{margin-top:clamp(72px,10cqw,160px);display:grid;grid-template-columns:minmax(120px,1fr) 3fr;gap:24px;align-items:start;padding-top:28px;border-top:1px solid var(--pf-line)}",
+".pf-label{font:500 11px/1.4 'Geist Mono',ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--pf-ink-2);padding-top:10px}",
+".pf-tool-list{display:flex;flex-wrap:wrap;gap:10px;list-style:none;margin:0;padding:0}",
+".pf-tool{display:inline-flex;align-items:center;gap:10px;padding:7px 16px 7px 7px;border-radius:999px;background:var(--pf-glass);border:1px solid var(--pf-line);backdrop-filter:blur(14px) saturate(1.4);-webkit-backdrop-filter:blur(14px) saturate(1.4);font-size:14px;font-weight:500;letter-spacing:-.01em}",
+".pf-logo{width:30px;height:30px;border-radius:50%;background:#fff;display:grid;place-items:center;overflow:hidden;flex:none;box-shadow:0 1px 2px rgba(0,0,0,.12)}",
+".pf-logo img{width:62%;height:62%;object-fit:contain}",
+".pf-logo svg{width:56%;height:56%;display:block}",
+".pf-mono{font:600 10.5px 'Geist Mono',ui-monospace,monospace;color:#111;letter-spacing:-.02em}",
+".pf-foot{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-block:clamp(64px,8cqw,120px) 36px;font:500 11px/1.4 'Geist Mono',ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--pf-ink-2)}",
+".pf-top-btn{background:none;border:0;color:inherit;font:inherit;letter-spacing:inherit;text-transform:inherit;cursor:pointer;padding:0}",
+".pf-cap{position:absolute;left:0;right:0;bottom:0;padding:48px 18px 15px;display:flex;justify-content:space-between;align-items:flex-end;gap:12px;color:#fff;background:linear-gradient(to top,rgba(0,0,0,.6),rgba(0,0,0,0));opacity:0;transform:translateY(6px);transition:opacity .35s,transform .35s;pointer-events:none}",
+".pf-w:hover .pf-cap,.pf-w:focus-visible .pf-cap{opacity:1;transform:none}",
+".pf-cap b{font-size:15px;font-weight:500;letter-spacing:-.01em;word-break:keep-all}",
+".pf-cap span{font:500 10.5px 'Geist Mono',ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;opacity:.85}",
+"@media (hover:none){.pf-cap{opacity:1;transform:none}}",
+".pf-lb{position:fixed;inset:0;z-index:20;container-type:inline-size;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:14px;padding:16px;background:rgba(12,12,14,.7);backdrop-filter:blur(18px) saturate(1.3);-webkit-backdrop-filter:blur(18px) saturate(1.3);opacity:0;visibility:hidden;transition:opacity .35s,visibility .35s;color:#f3f3f5;font-family:'Geist','IBM Plex Sans KR',system-ui,sans-serif}",
+".pf-lb.on{opacity:1;visibility:visible}",
+".pf-lb-top{display:flex;justify-content:space-between;align-items:center;gap:12px;font:500 11px 'Geist Mono',ui-monospace,monospace;letter-spacing:.1em;color:rgba(243,243,245,.6)}",
+".pf-lb button{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);color:#fff;border-radius:999px;padding:8px 14px;font:500 11px 'Geist Mono',ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}",
+".pf-lb button:hover{background:rgba(255,255,255,.2)}",
+".pf-lb-bar{display:flex;justify-content:center;gap:10px}",
+".pf-lb .pf-lb-x{width:44px;height:44px;padding:0;display:grid;place-items:center;border-radius:50%;transition:background .2s,transform .3s cubic-bezier(.2,.7,.2,1)}",
+".pf-lb .pf-lb-x:hover{transform:rotate(90deg)}",
+".pf-d-body{min-height:0;display:grid;grid-template-columns:minmax(0,1.75fr) minmax(300px,1fr);gap:16px}",
+".pf-lb.plain .pf-d-body{grid-template-columns:minmax(0,1fr)}",
+".pf-d-media{min-height:0;display:grid;place-items:center}",
+".pf-d-media img{width:100%;height:100%;object-fit:contain;transform:scale(.985);transition:transform .5s cubic-bezier(.2,.7,.2,1)}",
+".pf-lb.on .pf-d-media img{transform:none}",
+".pf-d-info{min-height:0;max-height:100%;align-self:center;overflow-y:auto;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:30px 28px;display:flex;flex-direction:column;gap:26px}",
+".pf-d-head{display:grid;gap:10px}",
+".pf-d-title{margin:0;font-size:30px;font-weight:500;letter-spacing:-.035em;line-height:1.15;word-break:keep-all;text-wrap:balance}",
+".pf-d-meta{margin:0;font:500 11px/1.5 'Geist Mono',ui-monospace,monospace;letter-spacing:.06em;color:rgba(243,243,245,.55)}",
+".pf-d-sum{margin:0;font-size:15px;line-height:1.7;color:rgba(243,243,245,.82);white-space:pre-line;word-break:keep-all}",
+".pf-d-lbl{font:500 10.5px 'Geist Mono',ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;color:rgba(243,243,245,.5);margin-bottom:12px}",
+".pf-d-res{display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:8px}",
+".pf-d-r{padding:16px 14px 14px;border-radius:12px;background:rgba(255,255,255,.08);display:grid;gap:6px;align-content:start}",
+".pf-d-r b{font-size:28px;line-height:1;font-weight:500;letter-spacing:-.04em;font-variant-numeric:tabular-nums}",
+".pf-d-r span{font-size:12px;line-height:1.45;color:rgba(243,243,245,.66);word-break:keep-all}",
+".pf-d-sec p{margin:0;font-size:15px;line-height:1.6;word-break:keep-all}",
+".pf-d-sec ul{margin:0;padding:0;list-style:none;display:grid;gap:9px}",
+".pf-d-sec li{position:relative;padding-left:18px;font-size:14px;line-height:1.6;color:rgba(243,243,245,.86);word-break:keep-all}",
+".pf-d-sec li::before{content:'';position:absolute;left:0;top:.8em;width:8px;height:1px;background:currentColor;opacity:.6}",
+"@container (max-width:820px){.pf-d-body{display:block;overflow-y:auto;overscroll-behavior:contain;padding-right:6px}.pf-d-media{display:block;margin-bottom:14px}.pf-d-media img{display:block;width:100%;height:auto;max-height:68vh;object-fit:contain}.pf-d-info{max-height:none;overflow:visible;padding:24px 20px}.pf-d-title{font-size:25px}}",
+".pf-d-body::-webkit-scrollbar,.pf-d-info::-webkit-scrollbar{width:10px;height:10px;background:transparent}",
+".pf-d-body::-webkit-scrollbar-track,.pf-d-info::-webkit-scrollbar-track{background:transparent}",
+".pf-d-body::-webkit-scrollbar-button,.pf-d-info::-webkit-scrollbar-button{display:none;width:0;height:0}",
+".pf-d-body::-webkit-scrollbar-corner,.pf-d-info::-webkit-scrollbar-corner{background:transparent}",
+".pf-d-body::-webkit-scrollbar-thumb,.pf-d-info::-webkit-scrollbar-thumb{background:rgba(255,255,255,.55);border:4px solid transparent;background-clip:padding-box;border-radius:10px;min-height:40px}",
+".pf-d-body::-webkit-scrollbar-thumb:hover,.pf-d-info::-webkit-scrollbar-thumb:hover{background-color:rgba(255,255,255,.85)}",
+"@supports not selector(::-webkit-scrollbar){.pf-d-body,.pf-d-info{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.55) transparent}}",
+"@container (max-width:680px){.pf-works{grid-template-columns:1fr}.pf-w{grid-column:auto;height:auto}.pf-w img{height:auto}.pf-tools{grid-template-columns:1fr;gap:12px}.pf-label{padding-top:0}.pf-tool{font-size:13px}}",
+"@media (prefers-reduced-motion:reduce){.pf-title,.pf-sub{animation:none}.pf-w img,.pf-lb,.pf-d-media img,.pf-cap{transition:none}}"
+].join("\n");
+
+function pfBg(canvas, cfg){
+  var ctx = canvas.getContext('2d'), w = 0, h = 0, raf = 0, last = performance.now(), phase = Math.random()*600;
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var P = [[.32,.26,1.00,.83,.2],[.30,.24,.77,1.13,2.1],[.28,.30,1.21,.69,4.0],[.34,.22,.61,.97,5.3]];
+  function rgba(hex,a){hex=String(hex).replace('#','');if(hex.length===3)hex=hex.split('').map(function(c){return c+c}).join('');var n=parseInt(hex,16)||0;return 'rgba('+(n>>16&255)+','+(n>>8&255)+','+(n&255)+','+a+')';}
+  function size(){var r=canvas.getBoundingClientRect();var nw=Math.max(48,Math.round(r.width/8)),nh=Math.max(48,Math.round(r.height/8));if(nw!==w||nh!==h){w=canvas.width=nw;h=canvas.height=nh;draw(phase);}}
+  function draw(p){
+    ctx.globalCompositeOperation='source-over';ctx.fillStyle=cfg.base;ctx.fillRect(0,0,w,h);
+    var m=Math.max(w,h);
+    for(var i=0;i<cfg.colors.length;i++){
+      var q=P[i%4], c=cfg.colors[i];
+      var x=w*(.5+q[0]*1.2*Math.sin(p*q[2]+q[4])+.18*Math.sin(p*.71*q[3]+i*1.7));
+      var y=h*(.5+q[1]*1.25*Math.cos(p*q[3]*1.1+q[4]*1.3)+.15*Math.cos(p*.53+i*2.3));
+      var r=m*(.5+.17*Math.sin(p*.9+i*1.9));
+      var g=ctx.createRadialGradient(x,y,0,x,y,r);
+      g.addColorStop(0,rgba(c,.92));g.addColorStop(.45,rgba(c,.42));g.addColorStop(1,rgba(c,0));
+      ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
+    }
+  }
+  function frame(now){var dt=Math.min(64,now-last);last=now;var sp=reduce?0:cfg.speed;if(sp>0){phase+=dt*.00045*sp;draw(phase);}raf=requestAnimationFrame(frame);}
+  if(window.ResizeObserver){new ResizeObserver(size).observe(canvas);}else{addEventListener('resize',size);}
+  size();draw(phase);raf=requestAnimationFrame(frame);
+  return {set:function(c){cfg=c;draw(phase);}};
+}
+
+function pfLightbox(root){
+  var lb=root.querySelector('.pf-lb'), body=lb.querySelector('.pf-d-body'), cnt=lb.querySelector('.pf-lb-count'), i=0;
+  function pad(n){return (n<10?'0':'')+n;}
+  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function data(){var el=root.querySelector('.pf-data');try{return el?JSON.parse(el.textContent):[];}catch(e){return [];}}
+  function show(k){
+    var list=[].slice.call(root.querySelectorAll('.pf-w img')),n=list.length;if(!n)return;
+    i=(k+n)%n;var p=data()[i]||{},tasks=p.tasks||[],res=p.results||[];
+    var has=!!(p.name||p.meta||p.summary||p.role||tasks.length||res.length);
+    var h='<div class="pf-d-media"><img src="'+list[i].src+'" alt="'+esc(p.name||('Work '+(i+1)))+'"></div>';
+    if(has){
+      h+='<aside class="pf-d-info"><div class="pf-d-head">'+(p.name?'<h2 class="pf-d-title">'+esc(p.name)+'</h2>':'')+(p.meta?'<p class="pf-d-meta">'+esc(p.meta)+'</p>':'')+'</div>'+
+        (p.summary?'<p class="pf-d-sum">'+esc(p.summary)+'</p>':'')+
+        (res.length?'<div class="pf-d-sec"><div class="pf-d-lbl">Impact</div><div class="pf-d-res" style="--n:'+Math.min(res.length,3)+'">'+res.map(function(r){return '<div class="pf-d-r"><b>'+esc(r.v)+'</b><span>'+esc(r.l)+'</span></div>';}).join('')+'</div></div>':'')+
+        (p.role?'<div class="pf-d-sec"><div class="pf-d-lbl">Role</div><p>'+esc(p.role)+'</p></div>':'')+
+        (tasks.length?'<div class="pf-d-sec"><div class="pf-d-lbl">What I did</div><ul>'+tasks.map(function(t){return '<li>'+esc(t)+'</li>';}).join('')+'</ul></div>':'')+
+        '</aside>';
+    }
+    body.innerHTML=h;body.scrollTop=0;lb.classList.toggle('plain',!has);
+    cnt.textContent=pad(i+1)+' / '+pad(n);lb.classList.add('on');
+  }
+  function close(){lb.classList.remove('on');}
+  root.addEventListener('click',function(e){
+    var t=e.target;
+    if(t.closest('[data-lb=prev]'))return show(i-1);
+    if(t.closest('[data-lb=next]'))return show(i+1);
+    if(t.closest('[data-lb=close]')||t===lb||t===body||t.classList.contains('pf-d-media')||t.classList.contains('pf-lb-bar')||t.classList.contains('pf-lb-top'))return close();
+    if(t.closest('[data-top]')){var s=root.querySelector('.pf-scroll');if(s&&s.scrollHeight>s.clientHeight)s.scrollTo({top:0,behavior:'smooth'});else window.scrollTo({top:0,behavior:'smooth'});return;}
+    var f=t.closest('.pf-w');if(f)show(+f.getAttribute('data-i'));
+  });
+  root.addEventListener('keydown',function(e){var f=e.target.closest&&e.target.closest('.pf-w');if(f&&(e.key==='Enter'||e.key===' ')){e.preventDefault();show(+f.getAttribute('data-i'));}});
+  document.addEventListener('keydown',function(e){if(!lb.classList.contains('on'))return;if(e.key==='Escape')close();if(e.key==='ArrowRight')show(i+1);if(e.key==='ArrowLeft')show(i-1);});
+  return {show:show,refresh:function(){if(lb.classList.contains('on'))show(i);},isOpen:function(){return lb.classList.contains('on');}};
+}
+
+/* ================= Data ================= */
+var PRESETS = [
+  {id:'peach',  name:'Peach Haze', base:'#f7efe9', colors:['#ffb39b','#ffd9a8','#f3a3c6','#c6d4ff'], ink:'dark'},
+  {id:'lagoon', name:'Lagoon',     base:'#e6f2ef', colors:['#7fd6c2','#a9c6ff','#dcf59a','#5fd8d0'], ink:'dark'},
+  {id:'chrome', name:'Chrome Fog', base:'#e4e5e8', colors:['#c3c8d1','#fafafb','#a9b3c1','#e2d9e8'], ink:'dark'},
+  {id:'citrus', name:'Citrus',     base:'#fff6dc', colors:['#ffd23f','#ff9150','#bde58f','#ffe6a0'], ink:'dark'},
+  {id:'ember',  name:'Ember',      base:'#140b09', colors:['#ff5a36','#ff9e3d','#7a1f5c','#3a1d58'], ink:'light'},
+  {id:'abyss',  name:'Deep Sea',   base:'#060c16', colors:['#1d4ed8','#0fb5a6','#5b3fd1','#0b2a4a'], ink:'light'},
+  {id:'orchid', name:'Orchid',     base:'#160d1c', colors:['#c56cf0','#ff7eb6','#5a2a8c','#ffb38a'], ink:'light'}
+];
+var QUICK = ['Figma','Photoshop','Illustrator','After Effects','Blender','Cinema 4D','Framer','Webflow','Rive','Spline','ProtoPie','Notion','Jira','Claude','DaVinci Resolve','Midjourney'];
+/* Brand marks from Simple Icons (CC0, simpleicons.org v16.34.0), matched by tool name */
+var ICONS={"figma":{"t":"Figma","c":"#F24E1E","d":"M15.852 8.981h-4.588V0h4.588c2.476 0 4.49 2.014 4.49 4.49s-2.014 4.491-4.49 4.491zM12.735 7.51h3.117c1.665 0 3.019-1.355 3.019-3.019s-1.355-3.019-3.019-3.019h-3.117V7.51zm0 1.471H8.148c-2.476 0-4.49-2.014-4.49-4.49S5.672 0 8.148 0h4.588v8.981zm-4.587-7.51c-1.665 0-3.019 1.355-3.019 3.019s1.354 3.02 3.019 3.02h3.117V1.471H8.148zm4.587 15.019H8.148c-2.476 0-4.49-2.014-4.49-4.49s2.014-4.49 4.49-4.49h4.588v8.98zM8.148 8.981c-1.665 0-3.019 1.355-3.019 3.019s1.355 3.019 3.019 3.019h3.117V8.981H8.148zM8.172 24c-2.489 0-4.515-2.014-4.515-4.49s2.014-4.49 4.49-4.49h4.588v4.441c0 2.503-2.047 4.539-4.563 4.539zm-.024-7.51a3.023 3.023 0 0 0-3.019 3.019c0 1.665 1.365 3.019 3.044 3.019 1.705 0 3.093-1.376 3.093-3.068v-2.97H8.148zm7.704 0h-.098c-2.476 0-4.49-2.014-4.49-4.49s2.014-4.49 4.49-4.49h.098c2.476 0 4.49 2.014 4.49 4.49s-2.014 4.49-4.49 4.49zm-.097-7.509c-1.665 0-3.019 1.355-3.019 3.019s1.355 3.019 3.019 3.019h.098c1.665 0 3.019-1.355 3.019-3.019s-1.355-3.019-3.019-3.019h-.098z","k":[]},"sketch":{"t":"Sketch","c":"#F7B500","d":"M12 1.25l6.75 6.637V2L12 1.25zm0 0l-6.05 7h12.1l-6.05-7zm0 0L5.25 2v5.887L12 1.25zM5.25 2L0 9l4.416-.68L5.25 2zM0 9l11.959 13.703.008-.014L4.443 9H0zm18.75-7l.834 6.32L24 9l-5.25-7zM24 9h-4.506l-7.523 13.69.029.06L24 9zM12 22.75l-.031-.057-.008.012.039.045zM5.436 9l6.533 13.686L18.564 9H5.436Z","k":[]},"framer":{"t":"Framer","c":"#0055FF","d":"M4 0h16v8h-8zM4 8h8l8 8H4zM4 16h8v8z","k":[]},"webflow":{"t":"Webflow","c":"#146EF5","d":"m24 4.515-7.658 14.97H9.149l3.205-6.204h-.144C9.566 16.713 5.621 18.973 0 19.485v-6.118s3.596-.213 5.71-2.435H0V4.515h6.417v5.278l.144-.001 2.622-5.277h4.854v5.244h.144l2.72-5.244H24Z","k":[]},"rive":{"t":"Rive","c":"#1D1D1D","d":"M.643 1.475c0 .814.668 1.475 1.49 1.475H14.49c1.408 0 2.568.43 3.48 1.29.91.861 1.366 1.967 1.366 3.32 0 1.25-.456 2.274-1.367 3.072-.911.78-2.07 1.168-3.479 1.168H9.12c-.824 0-1.491.66-1.491 1.475 0 .815.667 1.475 1.491 1.475h5.93l5.342 8.482c.332.512.797.768 1.398.768.663 0 1.129-.256 1.398-.768.269-.533.217-1.096-.155-1.69l-4.753-7.56c1.284-.574 2.299-1.414 3.044-2.52.746-1.127 1.119-2.427 1.119-3.902 0-1.496-.342-2.807-1.026-3.934-.662-1.127-1.594-2.008-2.795-2.643C17.42.327 16.044 0 14.49 0H2.134C1.311 0 .643.66.643 1.475Z","k":[]},"blender":{"t":"Blender","c":"#E87D0D","d":"M12.51 13.214c.046-.8.438-1.506 1.03-2.006a3.424 3.424 0 0 1 2.212-.79c.85 0 1.631.3 2.211.79.592.5.983 1.206 1.028 2.005.045.823-.285 1.586-.865 2.153a3.389 3.389 0 0 1-2.374.938 3.393 3.393 0 0 1-2.376-.938c-.58-.567-.91-1.33-.865-2.152M7.35 14.831c.006.314.106.922.256 1.398a7.372 7.372 0 0 0 1.593 2.757 8.227 8.227 0 0 0 2.787 2.001 8.947 8.947 0 0 0 3.66.76 8.964 8.964 0 0 0 3.657-.772 8.285 8.285 0 0 0 2.785-2.01 7.428 7.428 0 0 0 1.592-2.762 6.964 6.964 0 0 0 .25-3.074 7.123 7.123 0 0 0-1.016-2.779 7.764 7.764 0 0 0-1.852-2.043h.002L13.566 2.55l-.02-.015c-.492-.378-1.319-.376-1.86.002-.547.382-.609 1.015-.123 1.415l-.001.001 3.126 2.543-9.53.01h-.013c-.788.001-1.545.518-1.695 1.172-.154.665.38 1.217 1.2 1.22V8.9l4.83-.01-8.62 6.617-.034.025c-.813.622-1.075 1.658-.563 2.313.52.667 1.625.668 2.447.004L7.414 14s-.069.52-.063.831zm12.09 1.741c-.97.988-2.326 1.548-3.795 1.55-1.47.004-2.827-.552-3.797-1.538a4.51 4.51 0 0 1-1.036-1.622 4.282 4.282 0 0 1 .282-3.519 4.702 4.702 0 0 1 1.153-1.371c.942-.768 2.141-1.183 3.396-1.185 1.256-.002 2.455.41 3.398 1.175.48.391.87.854 1.152 1.367a4.28 4.28 0 0 1 .522 1.706 4.236 4.236 0 0 1-.239 1.811 4.54 4.54 0 0 1-1.035 1.626","k":[]},"cinema4d":{"t":"Cinema 4D","c":"#011A6A","d":"M12.052 0C5.394-.007-.003 5.412 0 11.976.003 18.654 5.475 23.981 11.978 24c6.535.02 12.057-5.306 12.022-11.998-.009-1.665-.53-5.371-1.84-5.276-1.98.145-2.159 4.12-2.377 5.407-.417 2.46-1.346 5.08-2.953 6.99-1.88 2.359-4.697 3.634-7.662 3.158-3.55-.564-5.893-3.278-6.68-5.201-.753-1.723-1.035-4.162-.07-6.324 1.16-2.766 3.734-4.632 6.28-5.584 2.006-.827 4.103-1.151 5.357-1.375 2.516-.5 2.855-1.463 2.814-2.149-.015-.252-.256-.724-.785-.943C15.03.269 13.268.001 12.052 0zm5.098 1.342c.139.398.088.85-.148 1.256-.325.56-.972 1.05-1.897 1.29-1.636.428-2.976.554-4.34.96-1.312.39-3.397 1.018-5.316 2.552-.268.842-.341 1.892-.369 2.662.15 5.014 4.557 8.884 9.17 8.682.853-.037 1.921-.261 2.912-.68a13.56 13.56 0 0 0 1.387-2.683l.002-.002v-.002c.424-1.03.606-1.836.8-2.793.32-1.565.202-2.88 1.012-4.758.251-.582.71-1.113 1.258-1.346.25-.105.522-.133.79-.072-.89-2.471-3.115-4.326-5.26-5.066z","k":["c4d","cinema4d"]},"houdini":{"t":"Houdini","c":"#FF4713","d":"M0 19.635V24h3.824A8.662 8.662 0 0 1 0 19.635zm16.042-4.555c0-4.037-3.253-7.92-8.111-8.089C4.483 6.873 1.801 8.136 0 10.005v4.209c1.224-3.549 4.595-5.158 7.419-5.128 3.531.041 6.251 2.703 6.275 5.72 0 2.878-1.183 4.992-4.436 5.516-1.774.296-4.548-.754-4.436-3.434.065-1.381 1.138-2.162 2.366-2.106-1.207 1.618.39 2.801 1.52 2.561a2.51 2.51 0 0 0 1.966-2.502c0-1.017-.958-2.662-3.333-2.6-2.936.068-4.785 2.183-4.85 4.797-.071 3.28 3.007 5.457 6.174 5.483 4.633.059 7.395-2.984 7.377-7.441zM0 0v6.906a12.855 12.855 0 0 1 7.931-2.609c6.801 0 11.134 4.762 11.131 10.765 0 4.17-1.946 7.308-4.995 8.938H24V0H0z","k":[]},"autodeskmaya":{"t":"Autodesk Maya","c":"#37A5CC","d":"M4.348 0 .69 2.203v16.875l3.657-2.203h17.297V1.219c0-.67-.551-1.219-1.22-1.219H4.349zm18.297 3.75v14.125H4.627l-1.943 1.17v3.736c0 .67.55 1.219 1.218 1.219H23.31V3.75h-.664zm-14.471.025h2.937l1.885 7.508 1.977-7.48-.012-.028h2.857v9.354h-2.216v-6.04l-1.565 6.026v.014h-2.203l-1.656-6.28v6.28H8.174V3.775zm1.33 14.762h1.18l1.068 3.543h-.902l-.217-.773H9.568l-.197.773h-.88l1.013-3.543zm1.918 0h.932l.648 1.494.643-1.494h.894l-1.113 2.133v1.41h-.887v-1.406l-1.117-2.137zm3.826 0h1.18l1.068 3.543h-.9l-.217-.773h-1.065l-.197.773h-.88l1.011-3.543zm-5.156.582-.362 1.53h.73l-.368-1.53zm5.744 0-.36 1.53h.73l-.37-1.53z","k":["maya"]},"unity":{"t":"Unity","c":"#111111","d":"m12.9288 4.2939 3.7997 2.1929c.1366.077.1415.2905 0 .3675l-4.515 2.6076a.4192.4192 0 0 1-.4246 0L7.274 6.8543c-.139-.0745-.1415-.293 0-.3675l3.7972-2.193V0L1.3758 5.5977V16.793l3.7177-2.1456v-4.3858c-.0025-.1565.1813-.2682.318-.1838l4.5148 2.6076a.4252.4252 0 0 1 .2136.3676v5.2127c.0025.1565-.1813.2682-.3179.1838l-3.7996-2.1929-3.7178 2.1457L12 24l9.6954-5.5977-3.7178-2.1457-3.7996 2.1929c-.1341.082-.3229-.0248-.3179-.1838V13.053c0-.1565.087-.2956.2136-.3676l4.5149-2.6076c.134-.082.3228.0224.3179.1838v4.3858l3.7177 2.1456V5.5977L12.9288 0Z","k":[]},"unrealengine":{"t":"Unreal Engine","c":"#0E1128","d":"M12 0a12 12 0 1012 12A12 12 0 0012 0zm0 23.52A11.52 11.52 0 1123.52 12 11.52 11.52 0 0112 23.52zm7.13-9.791c-.206.997-1.126 3.557-4.06 4.942l-1.179-1.325-1.988 2a7.338 7.338 0 01-5.804-2.978 2.859 2.859 0 00.65.123c.326.006.678-.114.678-.66v-5.394a.89.89 0 00-1.116-.89c-.92.212-1.656 2.509-1.656 2.509a7.304 7.304 0 012.528-5.597 7.408 7.408 0 013.73-1.721c-1.006.573-1.57 1.507-1.57 2.29 0 1.262.76 1.109.984.923v7.28a1.157 1.157 0 00.148.256 1.075 1.075 0 00.88.445c.76 0 1.747-.868 1.747-.868V9.172c0-.6-.452-1.324-.905-1.572 0 0 .838-.149 1.484.346a5.537 5.537 0 01.387-.425c1.508-1.48 2.929-1.902 4.112-2.112 0 0-2.151 1.69-2.151 3.96 0 1.687.043 5.801.043 5.801.799.771 1.986-.342 3.059-1.441Z","k":["unreal","ue5"]},"notion":{"t":"Notion","c":"#000000","d":"M4.459 4.208c.746.606 1.026.56 2.428.466l13.215-.793c.28 0 .047-.28-.046-.326L17.86 1.968c-.42-.326-.981-.7-2.055-.607L3.01 2.295c-.466.046-.56.28-.374.466zm.793 3.08v13.904c0 .747.373 1.027 1.214.98l14.523-.84c.841-.046.935-.56.935-1.167V6.354c0-.606-.233-.933-.748-.887l-15.177.887c-.56.047-.747.327-.747.933zm14.337.745c.093.42 0 .84-.42.888l-.7.14v10.264c-.608.327-1.168.514-1.635.514-.748 0-.935-.234-1.495-.933l-4.577-7.186v6.952L12.21 19s0 .84-1.168.84l-3.222.186c-.093-.186 0-.653.327-.746l.84-.233V9.854L7.822 9.76c-.094-.42.14-1.026.793-1.073l3.456-.233 4.764 7.279v-6.44l-1.215-.139c-.093-.514.28-.887.747-.933zM1.936 1.035l13.31-.98c1.634-.14 2.055-.047 3.082.7l4.249 2.986c.7.513.934.653.934 1.213v16.378c0 1.026-.373 1.634-1.68 1.726l-15.458.934c-.98.047-1.448-.093-1.962-.747l-3.129-4.06c-.56-.747-.793-1.306-.793-1.96V2.667c0-.839.374-1.54 1.447-1.632z","k":[]},"miro":{"t":"Miro","c":"#050038","d":"M17.392 0H13.9L17 4.808 10.444 0H6.949l3.102 6.3L3.494 0H0l3.05 8.131L0 24h3.494L10.05 6.985 6.949 24h3.494L17 5.494 13.899 24h3.493L24 3.672 17.392 0z","k":[]},"jira":{"t":"Jira","c":"#0052CC","d":"M11.571 11.513H0a5.218 5.218 0 0 0 5.232 5.215h2.13v2.057A5.215 5.215 0 0 0 12.575 24V12.518a1.005 1.005 0 0 0-1.005-1.005zm5.723-5.756H5.736a5.215 5.215 0 0 0 5.215 5.214h2.129v2.058a5.218 5.218 0 0 0 5.215 5.214V6.758a1.001 1.001 0 0 0-1.001-1.001zM23.013 0H11.455a5.215 5.215 0 0 0 5.215 5.215h2.129v2.057A5.215 5.215 0 0 0 24 12.483V1.005A1.001 1.001 0 0 0 23.013 0Z","k":[]},"confluence":{"t":"Confluence","c":"#172B4D","d":"M.87 18.257c-.248.382-.53.875-.763 1.245a.764.764 0 0 0 .255 1.04l4.965 3.054a.764.764 0 0 0 1.058-.26c.199-.332.454-.763.733-1.221 1.967-3.247 3.945-2.853 7.508-1.146l4.957 2.337a.764.764 0 0 0 1.028-.382l2.364-5.346a.764.764 0 0 0-.382-1 599.851 599.851 0 0 1-4.965-2.361C10.911 10.97 5.224 11.185.87 18.257zM23.131 5.743c.249-.405.531-.875.764-1.25a.764.764 0 0 0-.256-1.034L18.675.404a.764.764 0 0 0-1.058.26c-.195.335-.451.763-.734 1.225-1.966 3.246-3.945 2.85-7.508 1.146L4.437.694a.764.764 0 0 0-1.027.382L1.046 6.422a.764.764 0 0 0 .382 1c1.039.49 3.105 1.467 4.965 2.361 6.698 3.246 12.392 3.029 16.738-4.04z","k":[]},"github":{"t":"GitHub","c":"#181717","d":"M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12","k":["github"]},"lottiefiles":{"t":"LottieFiles","c":"#00DDB3","d":"M17.928 0H6.072A6.076 6.076 0 0 0 0 6.073v11.854A6.076 6.076 0 0 0 6.073 24h11.854A6.076 6.076 0 0 0 24 17.927V6.073A6.076 6.076 0 0 0 17.927 0m1.42 7.013a1.4 1.4 0 0 1-.26.39c-.11.11-.24.2-.39.26-.14.06-.3.09-.45.09-2.511 0-3.482 1.53-4.792 4.042l-.8 1.51c-1.231 2.382-2.762 5.323-6.894 5.323-.31 0-.62-.12-.84-.35a1.188 1.188 0 0 1 .84-2.031c2.511 0 3.482-1.53 4.792-4.042l.8-1.51c1.231-2.382 2.762-5.323 6.894-5.323q.24 0 .45.09c.14.06.27.15.39.26.11.11.2.24.26.39a1.17 1.17 0 0 1 0 .9","k":["lottie"]},"davinciresolve":{"t":"DaVinci Resolve","c":"#233A51","d":"M17.621 0 5.977.004c-1.37 0-2.756.345-3.762 1.11a4.925 4.925 0 0 0-1.61 2.003C.233 3.93 0 5.02 0 5.951l.012 12.2c.002 1.604.479 3.057 1.461 4.112.984 1.056 2.462 1.683 4.331 1.691L16.856 24c1.26.005 3.095-.036 4.303-.714 1.075-.605 2.025-1.556 2.497-2.984.278-.84.345-2.084.344-3.147l-.021-11.13c-.002-.888-.15-2.023-.547-2.934-.425-.976-1.181-1.815-2.322-2.425C20.353.26 19.123 0 17.622 0zm0 .93c1.378 0 2.538.295 3.04.565.977.523 1.544 1.166 1.889 1.96.315.721.47 1.793.473 2.572l.018 11.13c.002 1.013-.097 2.257-.298 2.86-.396 1.202-1.146 1.946-2.063 2.462-.814.457-2.612.593-3.82.588l-11.05-.044c-1.657-.007-2.832-.534-3.626-1.386-.792-.851-1.212-2.06-1.212-3.485L.999 5.95c0-.829.196-1.827.474-2.437.345-.757.75-1.207 1.365-1.674C3.585 1.27 4.868.97 6.08.97zm-5.66 3.423c-1.976.089-3.204 1.658-3.214 3.29.019 1.443 1.635 3.481 2.884 4.53.12.099.154.109.33.18.062.025.198-.047.327-.135.36-.245.993-.947 1.648-1.738a7.67 7.67 0 0 0 1.031-1.683c.409-.89.261-1.599.235-1.888a3.983 3.983 0 0 0-.99-1.692 3.36 3.36 0 0 0-2.251-.864zm4.172 7.922a10.185 10.185 0 0 0-3.244.61c-.15.058-.26.1-.374.17-.057.036-.11.135-.105.292.017.433.29 1.278.624 2.27.384 1.135 1.066 2.27 1.844 2.74a3.23 3.23 0 0 0 2.53.342c.832-.243 1.595-.868 1.962-1.546.986-1.818.19-3.548-1.121-4.417-.447-.296-1.133-.445-1.89-.46-.074 0-.15-.002-.226-.001zm-8.432.038a6.201 6.201 0 0 0-.752.047c-.596.078-.932.273-1.29.51a3.177 3.177 0 0 0-1.365 1.979c-.075.552-.086 1.053.033 1.507.433 1.389 1.326 2.222 2.847 2.452.636.028 1.37-.063 1.99-.45 1.269-.782 2.08-3.17 2.412-4.742.053-.176.035-.357-.013-.42-.005-.067-.044-.113-.19-.183-.398-.192-1.32-.417-2.375-.6a7.68 7.68 0 0 0-1.297-.1z","k":["davinci","resolve"]},"penpot":{"t":"Penpot","c":"#000000","d":"M7.654 0 5.13 3.554v2.01L2.934 6.608l-.02-.009v13.109l8.563 4.045L12 24l.523-.247 8.563-4.045V6.6l-.017.008-2.196-1.045V3.555l-.077-.108L16.349.001l-2.524 3.554v.004L11.989.973l-1.823 2.566-.065-.091zm.447 2.065.976 1.374H6.232l.964-1.358zm8.694 0 .976 1.374h-2.845l.965-1.358zm-4.36.971.976 1.375h-2.845l.965-1.359zM5.962 4.132h1.35v4.544l-1.35-.638Zm2.042 0h1.343v5.506l-1.343-.635zm6.652 0h1.35V9l-1.35.637V4.132zm2.042 0h1.343v3.905l-1.343.634zm-6.402.972h1.35v5.62l-1.35-.638zm2.042 0h1.343v4.993l-1.343.634zm6.534 1.493 1.188.486-1.188.561zM5.13 6.6v1.047l-1.187-.561ZM3.96 8.251l7.517 3.55v10.795l-7.516-3.55zm16.08 0v10.794l-7.517 3.55V11.802z","k":[]},"storybook":{"t":"Storybook","c":"#FF4785","d":"M16.71.243l-.12 2.71a.18.18 0 00.29.15l1.06-.8.9.7a.18.18 0 00.28-.14l-.1-2.76 1.33-.1a1.2 1.2 0 011.279 1.2v21.596a1.2 1.2 0 01-1.26 1.2l-16.096-.72a1.2 1.2 0 01-1.15-1.16l-.75-19.797a1.2 1.2 0 011.13-1.27L16.7.222zM13.64 9.3c0 .47 3.16.24 3.59-.08 0-3.2-1.72-4.89-4.859-4.89-3.15 0-4.899 1.72-4.899 4.29 0 4.45 5.999 4.53 5.999 6.959 0 .7-.32 1.1-1.05 1.1-.96 0-1.35-.49-1.3-2.16 0-.36-3.649-.48-3.769 0-.27 4.03 2.23 5.2 5.099 5.2 2.79 0 4.969-1.49 4.969-4.18 0-4.77-6.099-4.64-6.099-6.999 0-.97.72-1.1 1.13-1.1.45 0 1.25.07 1.19 1.87z","k":[]},"claude":{"t":"Claude","c":"#D97757","d":"m4.7144 15.9555 4.7174-2.6471.079-.2307-.079-.1275h-.2307l-.7893-.0486-2.6956-.0729-2.3375-.0971-2.2646-.1214-.5707-.1215-.5343-.7042.0546-.3522.4797-.3218.686.0608 1.5179.1032 2.2767.1578 1.6514.0972 2.4468.255h.3886l.0546-.1579-.1336-.0971-.1032-.0972L6.973 9.8356l-2.55-1.6879-1.3356-.9714-.7225-.4918-.3643-.4614-.1578-1.0078.6557-.7225.8803.0607.2246.0607.8925.686 1.9064 1.4754 2.4893 1.8336.3643.3035.1457-.1032.0182-.0728-.164-.2733-1.3539-2.4467-1.445-2.4893-.6435-1.032-.17-.6194c-.0607-.255-.1032-.4674-.1032-.7285L6.287.1335 6.6997 0l.9957.1336.419.3642.6192 1.4147 1.0018 2.2282 1.5543 3.0296.4553.8985.2429.8318.091.255h.1579v-.1457l.1275-1.706.2368-2.0947.2307-2.6957.0789-.7589.3764-.9107.7468-.4918.5828.2793.4797.686-.0668.4433-.2853 1.8517-.5586 2.9021-.3643 1.9429h.2125l.2429-.2429.9835-1.3053 1.6514-2.0643.7286-.8196.85-.9046.5464-.4311h1.0321l.759 1.1293-.34 1.1657-1.0625 1.3478-.8804 1.1414-1.2628 1.7-.7893 1.36.0729.1093.1882-.0183 2.8535-.607 1.5421-.2794 1.8396-.3157.8318.3886.091.3946-.3278.8075-1.967.4857-2.3072.4614-3.4364.8136-.0425.0304.0486.0607 1.5482.1457.6618.0364h1.621l3.0175.2247.7892.522.4736.6376-.079.4857-1.2142.6193-1.6393-.3886-3.825-.9107-1.3113-.3279h-.1822v.1093l1.0929 1.0686 2.0035 1.8092 2.5075 2.3314.1275.5768-.3218.4554-.34-.0486-2.2039-1.6575-.85-.7468-1.9246-1.621h-.1275v.17l.4432.6496 2.3436 3.5214.1214 1.0807-.17.3521-.6071.2125-.6679-.1214-1.3721-1.9246L14.38 17.959l-1.1414-1.9428-.1397.079-.674 7.2552-.3156.3703-.7286.2793-.6071-.4614-.3218-.7468.3218-1.4753.3886-1.9246.3157-1.53.2853-1.9004.17-.6314-.0121-.0425-.1397.0182-1.4328 1.9672-2.1796 2.9446-1.7243 1.8456-.4128.164-.7164-.3704.0667-.6618.4008-.5889 2.386-3.0357 1.4389-1.882.929-1.0868-.0062-.1579h-.0546l-6.3385 4.1164-1.1293.1457-.4857-.4554.0608-.7467.2307-.2429 1.9064-1.3114Z","k":[]},"krita":{"t":"Krita","c":"#3BABFF","d":"M.652.76a.625.625 0 00-.5.246c-.352.448-.035.898.362 1.262.206.189 1.77 1.794 3.428 3.527a11.054 11.054 0 011.815-1.983C3.667 2.515 1.694 1.266 1.461 1.1 1.201.914.917.762.652.76zm5.105 3.052c1.848 1.148 3.786 2.332 4.693 2.84 1.469.821 3.758 2.684 4.092 4.434.535.466 2.182 1.916 2.596 2.413.698-.211 1.518.133 2.06 1.12.866 1.583.227 3.747-1.968 4.988a5.42 5.42 0 01-.296.267l.296-.267c1.14-1.468-.714-2.44-1.175-3.864a2.06 2.06 0 01-.11-.78c-.533-.282-2.11-1.452-2.795-1.965-1.801.16-4.207-1.773-5.35-3.08-.7-.802-2.32-2.517-3.858-4.123a11.052 11.052 0 00-2.046 6.393A11.052 11.052 0 1012.948 1.136c-2.64.004-5.19.954-7.19 2.676zm8.71 7.552c-.515.126-.968.831-1.118 1.306-.038.115-.04.303.066.342.802.592 1.556 1.168 2.4 1.7.162-.393.746-.963 1.096-1.2zm-11.53 1.639c.812 1.898 5.798 7.17 12.06 2.695a2.07 2.07 0 00.114.715c.46 1.42 2.36 2.427 1.238 3.89-2.135 1.364-5 1.201-6.989.528-3.558-1.204-5.914-4.332-6.424-7.828zm13.782.7a.771.771 0 00-.065.049c-.004.003-.008.008-.011.008.003-.003.007-.008.01-.008.024-.015.044-.034.066-.048z","k":[]},"inkscape":{"t":"Inkscape","c":"#000000","d":"M7.666 14.871c.237.147 3.818.875 4.693 1.02.303.064.088.376-.33.587-.943.251-5.517-1.607-4.363-1.607zm5.647-13.264l3.505 3.56c.333.34.328.998.142 1.187l-1.74-1.392-.342 2.061-1.455-.767-2.328 1.47-.771-3.1L9.073 6.79H7.16c-.78 0-.871-.99-.163-1.698 1.237-1.335 2.657-2.696 3.429-3.485.776-.793 2.127-.77 2.887 0zM9.786.97l-8.86 9.066c-2.993 3.707 2.038 3.276 4.194 4.343.774.791-2.965 1.375-2.191 2.166.773.791 4.678 1.524 5.453 2.314.773.791-1.584 1.63-.81 2.42.773.792 2.563.042 2.898 1.868.238 1.304 3.224.56 4.684-.508.774-.791-1.48-.717-.706-1.508 1.923-1.967 3.715-.714 4.373-2.686.325-.974-2.832-1.501-2.057-2.292 2.226-1.3 9.919-2.146 6.268-5.796L13.85.97c-1.123-1.078-2.998-1.09-4.063 0zm10.177 17.475c0 .45 3.314.745 3.314-.106-.472-1.366-2.922-1.274-3.314.106zm-14.928 2.39c.784.679 1.997-.169 2.36-1.116-.76-1.01-3.607.037-2.36 1.116zm14.512-1.466c-1.011.908.114 1.828 1.111 1.242.222-.225-.006-1.016-1.11-1.242Z","k":[]},"gimp":{"t":"GIMP","c":"#8C8073","d":"M15.496 8.608a2.175 2.385 0 0 0-2.175 2.384 2.175 2.385 0 0 0 2.175 2.385 2.175 2.385 0 0 0 2.175-2.385 2.175 2.385 0 0 0-2.175-2.384zm0 .15a.934.934 0 0 1 .933.935.934.934 0 0 1-.933.934.934.934 0 0 1-.934-.934.934.934 0 0 1 .934-.934zm4.903 9.433a.314.314 0 0 0-.094.014c-.278.08-.642.735-.563 1.013.079.278.356.152.524.245.149.083.196.33.4.329-.033.446.125.903.398 1.231.464.564 1.173.576 1.627.68.453.103.789.38.955.683h-.01c.14.253.413-.965.313-1.81-.199-1.692-1.827-2.294-2.657-1.856-.095-.218-.349-.112-.507-.2-.147-.082-.195-.323-.39-.329zM2.01 8.207a2.938 2.279 78.561 0 0-.296.036 2.938 2.279 78.561 0 0-1.637 3.343 2.938 2.279 78.561 0 0 2.824 2.412 2.938 2.279 78.561 0 0 1.637-3.343A2.938 2.279 78.561 0 0 2.01 8.207zm.02.182a1.24 1.24 89.982 0 1 1.24 1.24 1.24 1.24 89.982 0 1-1.24 1.241 1.24 1.24 89.982 0 1-1.24-1.24 1.24 1.24 89.982 0 1 1.24-1.24zm7.296.619a1.61 1.957 0 0 0-1.61 1.957 1.61 1.957 0 0 0 1.61 1.957 1.61 1.957 0 0 0 1.61-1.957 1.61 1.957 0 0 0-1.61-1.957zm.01.142a.734.734 0 0 1 .733.733.734.734 0 0 1-.733.734.734.734 0 0 1-.734-.734.734.734 0 0 1 .734-.733zm13.785-7.57c-.082.01-.178.056-.278.184-2.255 3.385-5.54 4.902-7.936 5.521a3.513 3.586 0 0 1 3.25 3.576 3.513 3.586 0 0 1-3.513 3.586 3.513 3.586 0 0 1-3.375-2.595 2.676 2.998 0 0 1-2.52 2 2.676 2.998 0 0 1-2.676-2.998 2.676 2.998 0 0 1 2.675-2.999 2.676 2.998 0 0 1 2.517 2.037 3.513 3.586 0 0 1 1.878-2.27c-1.887.246-2.89-.025-4.335-.649-1.024-.56-1.722-1.173-2.48-2.359-.036-.055-.11-.086-.16-.025-.18.241-.97 5.723-.98 6.227-.033 1.632-.706 3.593-2.73 3.661 1.864 3.799 5.919 5.465 10.586 5.397 1.404.01 3.329-.332 5.171-1.243a213.84 213.84 0 0 1-1.568-.996c-1.347.788-2.935 1.09-4.674 1.019-2.217-.09-1.847-.732-1.36-.667 3.574.506 5.82-.624 7.315-2.547a34.596 34.596 0 0 1-.556-.377c-.164-.114.032-.291.385-.304h.04c.205-.002.458.056.722.206.757.433.783.965.535 1.081-.08.037-.263-.048-.439-.151-.255.329-.53.622-.818.887h.01c.668.29 1.568.684 2.005.89a9.634 9.634 0 0 0 3.017-3.574c2.18-4.449.652-12.176.614-12.29-.039-.112-.15-.211-.242-.226h-.076z","k":[]},"lunacy":{"t":"Lunacy","c":"#179DE3","d":"M12.031 6h-6v12h11.996v-6l-5.996 5.996Zm6.563 2.309a4.013 4.013 0 0 1-2.371-2.375 4.03 4.03 0 0 1-2.375 2.375 4.04 4.04 0 0 1 2.375 2.375 4.013 4.013 0 0 1 2.37-2.375ZM0 9.602c0-3.364 0-5.043.652-6.325A6.044 6.044 0 0 1 3.277.652C4.56 0 6.238 0 9.602 0h4.796c3.364 0 5.043 0 6.325.652a6.044 6.044 0 0 1 2.625 2.625C24 4.56 24 6.238 24 9.602v4.796c0 3.364 0 5.043-.652 6.325a6.044 6.044 0 0 1-2.625 2.625C19.44 24 17.762 24 14.398 24H9.602c-3.364 0-5.043 0-6.325-.652a6.044 6.044 0 0 1-2.625-2.625C0 19.44 0 17.762 0 14.398Z","k":[]},"vectary":{"t":"Vectary","c":"#6100FF","d":"M2.1797 2.3184a6.6198 6.6198 0 0 0-.2734.0117c-.628.017-1.2937.412-1.6094.955-.3423.5267-.395 1.3011-.127 1.8692l4.2715 9.668c.2394.5807.845 1.0623 1.4649 1.164.614.1323 1.3555-.0942 1.791-.5468 1.0385-1.0052 1.8471-2.4642 2.1425-4.0215.2956-1.5574.0788-3.2117-.5195-4.5274-.5696-1.3282-1.6479-2.603-2.998-3.4336-1.2658-.7785-2.7708-1.1679-4.1426-1.1386zm18.8574 0c-.9528.0168-1.9351.2075-2.834.5898-1.7978.7646-3.267 2.3-3.914 3.8613L8.1719 20.6211c-.0507.1103-.0512.2522-.002.3633.0459.1124.149.21.2637.25 1.5734.617 3.6982.622 5.496-.1426 1.7978-.7646 3.269-2.3 3.9161-3.8613l6.1152-13.8516c.0508-.1103.0512-.2523.002-.3633-.0458-.1124-.147-.21-.2617-.25-.7867-.3085-1.7113-.464-2.664-.4472z","k":[]},"linear":{"t":"Linear","c":"#5E6AD2","d":"M2.886 4.18A11.982 11.982 0 0 1 11.99 0C18.624 0 24 5.376 24 12.009c0 3.64-1.62 6.903-4.18 9.105L2.887 4.18ZM1.817 5.626l16.556 16.556c-.524.33-1.075.62-1.65.866L.951 7.277c.247-.575.537-1.126.866-1.65ZM.322 9.163l14.515 14.515c-.71.172-1.443.282-2.195.322L0 11.358a12 12 0 0 1 .322-2.195Zm-.17 4.862 9.823 9.824a12.02 12.02 0 0 1-9.824-9.824Z","k":[]},"cursor":{"t":"Cursor","c":"#000000","d":"M11.503.131 1.891 5.678a.84.84 0 0 0-.42.726v11.188c0 .3.162.575.42.724l9.609 5.55a1 1 0 0 0 .998 0l9.61-5.55a.84.84 0 0 0 .42-.724V6.404a.84.84 0 0 0-.42-.726L12.497.131a1.01 1.01 0 0 0-.996 0M2.657 6.338h18.55c.263 0 .43.287.297.515L12.23 22.918c-.062.107-.229.064-.229-.06V12.335a.59.59 0 0 0-.295-.51l-9.11-5.257c-.109-.063-.064-.23.061-.23","k":[]},"dribbble":{"t":"Dribbble","c":"#EA4C89","d":"M12 24C5.385 24 0 18.615 0 12S5.385 0 12 0s12 5.385 12 12-5.385 12-12 12zm10.12-10.358c-.35-.11-3.17-.953-6.384-.438 1.34 3.684 1.887 6.684 1.992 7.308 2.3-1.555 3.936-4.02 4.395-6.87zm-6.115 7.808c-.153-.9-.75-4.032-2.19-7.77l-.066.02c-5.79 2.015-7.86 6.025-8.04 6.4 1.73 1.358 3.92 2.166 6.29 2.166 1.42 0 2.77-.29 4-.814zm-11.62-2.58c.232-.4 3.045-5.055 8.332-6.765.135-.045.27-.084.405-.12-.26-.585-.54-1.167-.832-1.74C7.17 11.775 2.206 11.71 1.756 11.7l-.004.312c0 2.633.998 5.037 2.634 6.855zm-2.42-8.955c.46.008 4.683.026 9.477-1.248-1.698-3.018-3.53-5.558-3.8-5.928-2.868 1.35-5.01 3.99-5.676 7.17zM9.6 2.052c.282.38 2.145 2.914 3.822 6 3.645-1.365 5.19-3.44 5.373-3.702-1.81-1.61-4.19-2.586-6.795-2.586-.825 0-1.63.1-2.4.285zm10.335 3.483c-.218.29-1.935 2.493-5.724 4.04.24.49.47.985.68 1.486.08.18.15.36.22.53 3.41-.43 6.8.26 7.14.33-.02-2.42-.88-4.64-2.31-6.38z","k":[]},"behance":{"t":"Behance","c":"#1769FF","d":"M16.969 16.927a2.561 2.561 0 0 0 1.901.677 2.501 2.501 0 0 0 1.531-.475c.362-.235.636-.584.779-.99h2.585a5.091 5.091 0 0 1-1.9 2.896 5.292 5.292 0 0 1-3.091.88 5.839 5.839 0 0 1-2.284-.433 4.871 4.871 0 0 1-1.723-1.211 5.657 5.657 0 0 1-1.08-1.874 7.057 7.057 0 0 1-.383-2.393c-.005-.8.129-1.595.396-2.349a5.313 5.313 0 0 1 5.088-3.604 4.87 4.87 0 0 1 2.376.563c.661.362 1.231.87 1.668 1.485a6.2 6.2 0 0 1 .943 2.133c.194.821.263 1.666.205 2.508h-7.699c-.063.79.184 1.574.688 2.187ZM6.947 4.084a8.065 8.065 0 0 1 1.928.198 4.29 4.29 0 0 1 1.49.638c.418.303.748.711.958 1.182.241.579.357 1.203.341 1.83a3.506 3.506 0 0 1-.506 1.961 3.726 3.726 0 0 1-1.503 1.287 3.588 3.588 0 0 1 2.027 1.437c.464.747.697 1.615.67 2.494a4.593 4.593 0 0 1-.423 2.032 3.945 3.945 0 0 1-1.163 1.413 5.114 5.114 0 0 1-1.683.807 7.135 7.135 0 0 1-1.928.259H0V4.084h6.947Zm-.235 12.9c.308.004.616-.029.916-.099a2.18 2.18 0 0 0 .766-.332c.228-.158.411-.371.534-.619.142-.317.208-.663.191-1.009a2.08 2.08 0 0 0-.642-1.715 2.618 2.618 0 0 0-1.696-.505h-3.54v4.279h3.471Zm13.635-5.967a2.13 2.13 0 0 0-1.654-.619 2.336 2.336 0 0 0-1.163.259 2.474 2.474 0 0 0-.738.62 2.359 2.359 0 0 0-.396.792c-.074.239-.12.485-.137.734h4.769a3.239 3.239 0 0 0-.679-1.785l-.002-.001Zm-13.813-.648a2.254 2.254 0 0 0 1.423-.433c.399-.355.607-.88.56-1.413a1.916 1.916 0 0 0-.178-.891 1.298 1.298 0 0 0-.495-.533 1.851 1.851 0 0 0-.711-.274 3.966 3.966 0 0 0-.835-.073H3.241v3.631h3.293v-.014ZM21.62 5.122h-5.976v1.527h5.976V5.122Z","k":[]}};
+var ICON_IDX=(function(){var m={};Object.keys(ICONS).forEach(function(k){m[k]=k;ICONS[k].k.forEach(function(a){m[a]=k;});});return m;})();
+function findIcon(name){var k=String(name||'').toLowerCase().replace(/[^a-z0-9]/g,'');return k&&ICON_IDX[k]?ICONS[ICON_IDX[k]]:null;}
+function iconSVG(ic,mono){return '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="'+(mono?'#141214':ic.c)+'" d="'+ic.d+'"/></svg>';}
+function logoInner(t,mono){if(t.logo)return '<img src="'+t.logo+'" alt="">';var ic=findIcon(t.name);return ic?iconSVG(ic,mono):'<span class="pf-mono">'+esc(initials(t.name))+'</span>';}
+var LAYOUT_ROWS = [[7,5],[4,4,4],[12],[5,7],[6,6]];
+var ROW_H = {'7,5':40,'4,4,4':42,'12':52,'5,7':40,'6,6':34};
+
+function defaults(){
+  return {
+    bg:{preset:'peach',custom:{base:'#101418',colors:['#ff6b6b','#ffd93d','#6bcbff','#b388ff']},ink:'auto',speed:1,grain:true},
+    title:'Selected Works',
+    sub:'브랜드와 프로덕트 사이에서 일하는 디자이너입니다.\n최근 몇 년의 작업 중 열 개를 골랐습니다.',
+    images:new Array(10).fill(null),
+    tools:[{id:uid(),name:'Figma',logo:null},{id:uid(),name:'Photoshop',logo:null},{id:uid(),name:'Illustrator',logo:null},{id:uid(),name:'Blender',logo:null}]
+  };
+}
+function uid(){return Math.random().toString(36).slice(2,9);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function lum(hex){hex=hex.replace('#','');var n=parseInt(hex,16);var r=(n>>16&255)/255,g=(n>>8&255)/255,b=(n&255)/255;return .2126*r+.7152*g+.0722*b;}
+function initials(name){var w=String(name).trim().split(/\s+/).filter(Boolean);if(!w.length)return '?';if(w.length===1)return w[0].slice(0,2).replace(/^./,function(c){return c.toUpperCase();});return (w[0][0]+w[1][0]).toUpperCase();}
+
+function bgCfg(s){
+  var p=PRESETS.find(function(x){return x.id===s.bg.preset;});
+  var base,colors,ink;
+  if(p){base=p.base;colors=p.colors;ink=p.ink;}
+  else{base=s.bg.custom.base;colors=s.bg.custom.colors;
+    if(s.bg.ink==='auto'){var L=lum(base)*.5+colors.reduce(function(a,c){return a+lum(c);},0)/colors.length*.5;ink=L>.52?'dark':'light';}else ink=s.bg.ink;}
+  return {base:base,colors:colors,ink:ink,speed:s.bg.speed};
+}
+function themeVars(cfg,grain){
+  var d=cfg.ink==='dark';
+  return '--pf-base:'+cfg.base+';--pf-ink:'+(d?'#141214':'#f6f5f7')+';--pf-ink-2:'+(d?'rgba(20,18,20,.62)':'rgba(246,245,247,.66)')+
+    ';--pf-glass:'+(d?'rgba(255,255,255,.38)':'rgba(255,255,255,.07)')+';--pf-line:'+(d?'rgba(20,18,20,.14)':'rgba(255,255,255,.16)')+';--pf-grain:'+(grain?(d?'.16':'.2'):'0');
+}
+
+function layout(n){
+  var out=[],k=0;
+  for(var r=0;r<LAYOUT_ROWS.length&&k<n;r++){
+    var row=LAYOUT_ROWS[r],left=n-k;
+    if(left>=row.length){row.forEach(function(sp){out.push({s:sp,h:ROW_H[row.join(',')]});});k+=row.length;}
+    else{var sp=12/left;var h=left===1?52:(left===2?36:40);for(var j=0;j<left;j++)out.push({s:sp,h:h});k=n;}
+  }
+  return out;
+}
+function normProj(p){
+  p=p||{};var r=(p.results||[]).filter(function(x){return x&&(String(x.v||'').trim()||String(x.l||'').trim());}).map(function(x){return {v:String(x.v||'').trim(),l:String(x.l||'').trim()};});
+  return {name:(p.name||'').trim(),meta:(p.meta||'').trim(),summary:(p.summary||'').trim(),role:(p.role||'').trim(),
+    tasks:String(p.tasks||'').split('\n').map(function(t){return t.replace(/^[\s\-•·*]+/,'').trim();}).filter(Boolean),results:r};
+}
+function emptyProj(){return {name:'',meta:'',summary:'',role:'',tasks:'',results:[{v:'',l:''},{v:'',l:''},{v:'',l:''}]};}
+var SAMPLE_PROJ=[
+ ['핀테크 앱 리디자인','샘플 · 2025 · 4개월','복잡한 송금 흐름을 3단계로 줄인 모바일 뱅킹 앱 개편.','리드 프로덕트 디자이너 · 기여도 70%','사용자 인터뷰 12건 진행, 핵심 불편 정리\n송금·인증 플로우 재설계\n디자인 시스템 컴포넌트 120종 정비',[['+32%','송금 완료율'],['−41%','고객센터 문의'],['4.7','앱스토어 평점']]],
+ ['공공기관 홈페이지 개편','샘플 · 2024 · 6개월','웹 접근성 인증을 목표로 한 기관 대표 홈페이지 전면 개편.','UI 디자인 리드','정보구조 재설계, 메뉴 40% 축소\nKWCAG 2.2 기준 컬러·타이포 체계 수립\n퍼블리셔와 컴포넌트 단위 검수',[['100%','접근성 심사 통과'],['−40%','메뉴 수'],['2.1×','모바일 방문']]],
+ ['브랜드 타이포 시스템','샘플 · 2025','리브랜딩에 맞춘 국영문 타이포그래피 가이드.','브랜드 디자이너','국문·영문 서체 페어링 제안\n웹·인쇄 타입 스케일 정의\n가이드북 제작',[['48p','가이드북'],['3곳','계열사 적용']]],
+ ['커머스 상세페이지 템플릿','샘플 · 2024 · 2개월','상품 상세페이지를 모듈 조립식으로 바꾼 템플릿.','UI 디자이너 · 기여도 100%','상세페이지 모듈 18종 설계\nCMS 입력 화면 함께 설계\nA/B 테스트 결과 반영',[['+18%','구매 전환율'],['−60%','제작 시간']]],
+ ['SaaS 운영 대시보드','샘플 · 2025 · 5개월','운영자가 매일 보는 지표를 한 화면에 모은 관리자 대시보드.','프로덕트 디자이너','운영자 업무 관찰, 지표 우선순위 정리\n차트 컴포넌트 규격 정의\n다크모드 대응',[['−35%','리포트 작성 시간'],['92%','주간 활성 운영자']]],
+ ['시즌 캠페인 키비주얼','샘플 · 2023','시즌 캠페인 키비주얼과 배너 확장 세트.','아트 디렉션 · 디자인','키비주얼 콘셉트 3안 제안\n배너 24종 사이즈 확장\n촬영 디렉팅',[['3.4%','배너 CTR'],['24종','확장 소재']]],
+ ['여행 뉴스레터 운영','샘플 · 2025 · 운영 중','매달 발행하는 여행 뉴스레터의 템플릿과 운영 디자인.','운영 디자이너','반응형 메일 템플릿 설계\n월간 이벤트 페이지 제작\n발행 체크리스트 운영',[['+27%','오픈율'],['12회','연속 발행']]],
+ ['CMS 디자인 시스템','샘플 · 2026 · 진행 중','오래된 사내 CMS를 토큰 기반 디자인 시스템으로 정비.','디자인 리드','컬러·간격 토큰 정의\n컴포넌트 80종 Figma 라이브러리화\n개발팀과 네이밍 규칙 합의',[['80종','컴포넌트'],['−50%','화면 제작 시간']]],
+ ['모바일 온보딩 개편','샘플 · 2024','첫 실행 이탈을 줄이기 위한 온보딩 개편.','UX 디자이너','퍼널 데이터 분석\n온보딩 4단계 → 2단계 축소\n일러스트 가이드 제작',[['−23%','첫날 이탈'],['+15%','가입 완료']]],
+ ['AI 챗봇 데모 사이트','샘플 · 2026','AI 상담 챗봇을 소개하는 데모 사이트 디자인.','UI/UX 디자이너','대화 UI 패턴 정의\n랜딩 페이지 디자인\n반응형 퍼블리싱 협업',[['2주','기획부터 오픈까지'],['5개','시연 시나리오']]]
+];
+function sampleProj(i){var a=SAMPLE_PROJ[i%10],r=a[5].map(function(x){return {v:x[0],l:x[1]};});while(r.length<3)r.push({v:'',l:''});return {name:a[0],meta:a[1],summary:a[2],role:a[3],tasks:a[4],results:r};}
+function pfMarkup(s){
+  var imgs=s.images.filter(Boolean),L=layout(imgs.length),yr=new Date().getFullYear();
+  var projs=imgs.map(function(im){return normProj(im.p);});
+  var works=imgs.length?imgs.map(function(im,i){var p=projs[i];return '<figure class="pf-w" role="button" tabindex="0" data-i="'+i+'" style="--s:'+L[i].s+';--h:'+L[i].h+'cqw"><img src="'+im.src+'" alt="'+esc(p.name||('Work '+(i+1)))+'" loading="lazy" decoding="async">'+
+      (p.name?'<figcaption class="pf-cap"><b>'+esc(p.name)+'</b><span>View &rarr;</span></figcaption>':'')+'</figure>';}).join('')+
+      '<script type="application/json" class="pf-data">'+JSON.stringify(projs).replace(/</g,'\\u003c')+'<\/script>'
+    :'<div class="pf-empty">이미지를 올리면 여기에 배치됩니다</div>';
+  var tools=s.tools.filter(function(t){return t.name.trim()||t.logo;});
+  var toolsHtml=tools.length?'<section class="pf-tools"><div class="pf-label">Tools</div><ul class="pf-tool-list">'+tools.map(function(t){
+      return '<li class="pf-tool"><span class="pf-logo">'+logoInner(t,s.logoMono)+'</span>'+esc(t.name)+'</li>';}).join('')+'</ul></section>':'';
+  var n=imgs.length;
+  return '<div class="pf-main"><header class="pf-top"><span>'+esc(s.title||'Portfolio')+'</span><span>Works — '+(n<10?'0':'')+n+'</span></header>'+
+    '<section class="pf-hero"><h1 class="pf-title">'+esc(s.title||'Portfolio')+'</h1>'+(s.sub?'<p class="pf-sub">'+esc(s.sub)+'</p>':'')+'</section>'+
+    '<section class="pf-works" aria-label="Works">'+works+'</section>'+toolsHtml+
+    '<footer class="pf-foot"><span>© '+yr+' '+esc(s.title||'')+'</span><button class="pf-top-btn" data-top>Back to top ↑</button></footer></div>';
+}
+function exportHTML(s){
+  var cfg=bgCfg(s);
+  return '<!doctype html>\n<html lang="ko">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n<title>'+esc(s.title||'Portfolio')+'</title>\n'+
+    (s.sub?'<meta name="description" content="'+esc(s.sub.replace(/\n/g,' '))+'">\n':'')+
+    '<meta name="theme-color" content="'+cfg.base+'">\n<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'+
+    '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..700&family=Geist+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@300;400;500;600&display=swap">\n'+
+    '<style>\n*{box-sizing:border-box}html,body{margin:0;min-height:100%}img{max-width:100%}\n'+PF_CSS+'\n</style>\n</head>\n'+
+    '<body class="pf-frame" style="'+themeVars(cfg,s.bg.grain)+'">\n<canvas class="pf-bg" aria-hidden="true"></canvas>\n<div class="pf-grain" aria-hidden="true"></div>\n'+
+    '<div class="pf-scroll">'+pfMarkup(s)+'</div>\n'+
+    '<div class="pf-lb" role="dialog" aria-modal="true" aria-label="Project detail"><div class="pf-lb-top"><span class="pf-lb-count"></span><button class="pf-lb-x" data-lb="close" aria-label="닫기"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg></button></div><div class="pf-d-body"></div><div class="pf-lb-bar"><button data-lb="prev">&larr; Prev</button><button data-lb="next">Next &rarr;</button></div></div>\n'+
+    '<script>\n'+pfBg.toString()+'\n'+pfLightbox.toString()+'\npfBg(document.querySelector(".pf-bg"),'+JSON.stringify({base:cfg.base,colors:cfg.colors,speed:cfg.speed})+');\npfLightbox(document.body);\n<\/script>\n</body>\n</html>\n';
+}
+
+/* ================= Sample images ================= */
+function makeSample(i){
+  var pal=[['#1d1b22','#ff8a65','#f4efe9'],['#e9e4da','#2f4bff','#111'],['#0f3d3a','#e8ff9a','#e6f2ef'],['#f3d9d0','#7a2e2e','#fff'],['#111318','#9fb4ff','#f0f0f2'],
+           ['#f2efe7','#ff5a36','#141214'],['#26203a','#ffb3d1','#fff'],['#dfe8f5','#0f172a','#fff'],['#2b2a26','#f2c14e','#f7f3ea'],['#eef0e8','#4b7b5a','#1b1f1b']][i];
+  var W=1600,H=[1200,1100,1600,1600,1600,900,1100,1200,1200,1200][i];
+  var c=document.createElement('canvas');c.width=W;c.height=H;var x=c.getContext('2d');
+  function rr(a,b,w,h,r){x.beginPath();if(x.roundRect)x.roundRect(a,b,w,h,r);else x.rect(a,b,w,h);x.fill();}
+  x.fillStyle=pal[0];x.fillRect(0,0,W,H);
+  var t=i%4;
+  if(t===0){x.fillStyle=pal[1];x.beginPath();x.arc(W*.68,H*.46,H*.34,0,7);x.fill();x.fillStyle=pal[2];rr(W*.12,H*.2,W*.36,H*.6,28);x.fillStyle=pal[0];for(var k=0;k<5;k++)rr(W*.16,H*(.28+k*.09),W*(.28-k*.03),H*.035,10);}
+  else if(t===1){for(var k=0;k<7;k++){x.fillStyle=k%2?pal[1]:pal[2];rr(W*(.08+k*.12),H*.18+(k%3)*40,W*.09,H*.62-(k%3)*80,18);}}
+  else if(t===2){x.fillStyle=pal[1];x.font='600 '+Math.round(H*.55)+'px Georgia, serif';x.textBaseline='middle';x.fillText('Aa',W*.08,H*.52);x.fillStyle=pal[2];rr(W*.62,H*.22,W*.28,H*.56,999);}
+  else{x.fillStyle=pal[2];rr(W*.3,H*.1,W*.4,H*.8,48);x.fillStyle=pal[1];rr(W*.34,H*.16,W*.32,H*.38,24);x.fillStyle=pal[0];for(var k=0;k<3;k++)rr(W*.34,H*(.6+k*.07),W*(.32-k*.08),H*.035,10);}
+  x.fillStyle=pal[2];x.globalAlpha=.75;x.font='500 30px ui-monospace, Menlo, monospace';x.fillText('SAMPLE '+(i<9?'0':'')+(i+1),56,H-56);x.globalAlpha=1;
+  return c.toDataURL('image/jpeg',.86);
+}
+
+/* ================= Storage (per-browser autosave) ================= */
+var DB=null;
+function idb(){return new Promise(function(res){try{var r=indexedDB.open('minifolio',1);r.onupgradeneeded=function(){r.result.createObjectStore('kv');};r.onsuccess=function(){res(r.result);};r.onerror=function(){res(null);};}catch(e){res(null);}});}
+function idbGet(k){return new Promise(function(res){if(!DB)return res(null);try{var q=DB.transaction('kv').objectStore('kv').get(k);q.onsuccess=function(){res(q.result||null);};q.onerror=function(){res(null);};}catch(e){res(null);}});}
+function idbSet(k,v){return new Promise(function(res){if(!DB)return res(false);try{var tx=DB.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=function(){res(true);};tx.onerror=function(){res(false);};}catch(e){res(false);}});}
+
+/* ================= Editor ================= */
+var S=defaults(), bg=null, saveT=0, detail=null;
+var $=function(id){return document.getElementById(id);};
+
+function save(){
+  clearTimeout(saveT);$('status').textContent='저장 중…';
+  saveT=setTimeout(function(){idbSet('state',S).then(function(ok){$('status').textContent=ok?'자동 저장됨':'이 브라우저에선 저장 안 됨';});},400);
+}
+function commit(full){renderPreview(full);save();}
+
+function renderSwatches(){
+  var html=PRESETS.map(function(p){
+    var g='radial-gradient(circle at 25% 30%,'+p.colors[0]+',transparent 62%),radial-gradient(circle at 78% 26%,'+p.colors[1]+',transparent 58%),radial-gradient(circle at 70% 80%,'+p.colors[2]+',transparent 60%),radial-gradient(circle at 22% 82%,'+p.colors[3]+',transparent 58%),'+p.base;
+    return '<button class="sw" data-p="'+p.id+'" aria-pressed="'+(S.bg.preset===p.id)+'"><i style="background:'+g+'"></i>'+p.name+'</button>';
+  }).join('')+'<button class="sw sw-custom" data-p="custom" aria-pressed="'+(S.bg.preset==='custom')+'"><i>+</i>Custom</button>';
+  $('swatches').innerHTML=html;
+  $('custom').hidden=S.bg.preset!=='custom';
+  var c=S.bg.custom;
+  $('customColors').innerHTML='<label class="col"><input type="color" data-c="base" value="'+c.base+'">BASE</label>'+c.colors.map(function(v,i){return '<label class="col"><input type="color" data-c="'+i+'" value="'+v+'">C'+(i+1)+'</label>';}).join('');
+  [].forEach.call(document.querySelectorAll('[data-ink]'),function(b){b.setAttribute('aria-pressed',String(b.dataset.ink===S.bg.ink));});
+}
+function renderSlots(){
+  var n=S.images.filter(Boolean).length, samples=S.images.some(function(im){return im&&im.sample;});
+  $('imgCount').textContent=n+' / 10';$('sampleNote').hidden=!samples;
+  $('slots').innerHTML=S.images.map(function(im,i){
+    var num='<span class="n">'+(i<9?'0':'')+(i+1)+'</span>';
+    if(!im)return '<button class="slot" data-slot="'+i+'" aria-label="'+(i+1)+'번 이미지 올리기">'+num+'<span class="plus">+</span></button>';
+    var filled=normProj(im.p);var hasInfo=filled.name||filled.role||filled.tasks.length||filled.results.length;
+    return '<div class="slot filled'+(S.sel===i?' sel':'')+'" draggable="true" data-slot="'+i+'" tabindex="0" role="button" aria-pressed="'+(S.sel===i)+'" aria-label="'+(i+1)+'번 작업 정보 편집">'+num+'<img src="'+im.src+'" alt="">'+(im.sample?'<span class="tag">SAMPLE</span>':'')+(hasInfo?'<span class="dot" title="정보 입력됨"></span>':'')+'<button class="x" data-rm="'+i+'" aria-label="'+(i+1)+'번 이미지 삭제">×</button></div>';
+  }).join('');
+  renderProj();
+}
+function renderProj(){
+  var box=$('proj'),im=S.images[S.sel];
+  if(S.sel==null||!im){box.innerHTML='';return;}
+  if(!im.p)im.p=emptyProj();
+  var p=im.p;while(p.results.length<3)p.results.push({v:'',l:''});
+  var nn=(S.sel<9?'0':'')+(S.sel+1);
+  box.innerHTML='<div class="proj"><div class="proj-h"><img src="'+im.src+'" alt=""><div><b>작업 '+nn+' · 프로젝트 정보</b><span>썸네일을 누르면 이 내용이 이미지 옆에 열려요</span></div></div>'+
+    '<div class="field"><label class="lbl" for="pName">프로젝트명</label><input class="inp" id="pName" data-pf="name" maxlength="40" placeholder="예: 핀테크 앱 리디자인" value="'+esc(p.name)+'"></div>'+
+    '<div class="field"><label class="lbl" for="pMeta">클라이언트 · 연도 · 기간</label><input class="inp" id="pMeta" data-pf="meta" maxlength="60" placeholder="예: OO은행 · 2025 · 4개월" value="'+esc(p.meta)+'"></div>'+
+    '<div class="field"><label class="lbl" for="pSum">한 줄 소개</label><textarea class="inp" id="pSum" data-pf="summary" rows="2" maxlength="160" placeholder="어떤 문제를 풀었는지 한두 문장으로">'+esc(p.summary)+'</textarea></div>'+
+    '<div class="field"><label class="lbl" for="pRole">내 역할</label><input class="inp" id="pRole" data-pf="role" maxlength="60" placeholder="예: 리드 디자이너 · 기여도 70%" value="'+esc(p.role)+'"></div>'+
+    '<div class="field"><label class="lbl" for="pTasks">담당 업무 <span style="text-transform:none;letter-spacing:0">— 한 줄에 하나씩</span></label><textarea class="inp" id="pTasks" data-pf="tasks" rows="4" placeholder="사용자 인터뷰 12건 진행&#10;결제 플로우 재설계&#10;디자인 시스템 정비">'+esc(p.tasks)+'</textarea></div>'+
+    '<div class="field"><span class="lbl">성과 — 숫자 + 설명</span><div class="res-rows">'+p.results.slice(0,3).map(function(r,k){
+      return '<div class="res-row"><input class="inp" id="pRv'+k+'" data-rv="'+k+'" maxlength="10" placeholder="'+['+32%','−40%','4.7'][k]+'" value="'+esc(r.v)+'" aria-label="성과 '+(k+1)+' 수치"><input class="inp" id="pRl'+k+'" data-rl="'+k+'" maxlength="24" placeholder="'+['가입 전환율','이탈률','앱 평점'][k]+'" value="'+esc(r.l)+'" aria-label="성과 '+(k+1)+' 설명"></div>';}).join('')+
+    '</div><p class="tip">숫자가 없으면 "3개 계열사 적용", "인증 통과"처럼 결과를 짧게 써도 좋아요. 비워 둔 칸은 표시되지 않아요.</p></div>'+
+    '<div class="proj-act"><button class="btn" id="pOpen">상세 화면 미리보기</button><button class="btn btn-ghost" id="pReplace">이미지 바꾸기</button></div></div>';
+}
+function renderedIndex(i){var k=0;for(var j=0;j<i;j++)if(S.images[j])k++;return k;}
+function syncLc(){document.querySelectorAll('[data-lc]').forEach(function(b){b.setAttribute('aria-pressed',String((b.dataset.lc==='mono')===!!S.logoMono));});}
+function renderTools(){syncLc();
+  $('toolCount').textContent=S.tools.length;
+  $('tools').innerHTML=S.tools.map(function(t){
+    return '<div class="tool" data-t="'+t.id+'"><button class="logo-btn'+((t.logo||findIcon(t.name))?' has':'')+'" data-logo="'+t.id+'" aria-label="'+esc(t.name)+' 로고 바꾸기">'+logoInner(t,S.logoMono)+'</button>'+
+      '<input class="inp" data-name="'+t.id+'" value="'+esc(t.name)+'" placeholder="툴 이름" maxlength="28" aria-label="툴 이름"><button class="del" data-del="'+t.id+'" aria-label="삭제">×</button></div>';
+  }).join('');
+  var have=S.tools.map(function(t){return t.name.toLowerCase();});
+  $('quick').innerHTML=QUICK.map(function(q){return '<button class="chip" data-q="'+q+'"'+(have.indexOf(q.toLowerCase())>-1?' disabled':'')+'>'+(findIcon(q)?iconSVG(findIcon(q),true).replace('#141214','currentColor'):'')+q+'</button>';}).join('');
+}
+function renderPreview(full){
+  var cfg=bgCfg(S),dev=$('device');
+  dev.setAttribute('style',themeVars(cfg,S.bg.grain));
+  if(bg)bg.set({base:cfg.base,colors:cfg.colors,speed:cfg.speed});
+  $('brandDot').style.setProperty('--dot','conic-gradient('+cfg.colors.concat(cfg.colors[0]).join(',')+')');
+  if(full!==false)$('pfScroll').innerHTML=pfMarkup(S);
+}
+function syncText(){
+  var t=$('pfScroll').querySelector('.pf-title'),sub=$('pfScroll').querySelector('.pf-sub'),top=$('pfScroll').querySelector('.pf-top span');
+  $('subCount').textContent=S.sub.length+' / 180';
+  if(!t||(!sub&&S.sub)||(sub&&!S.sub))return commit(true);
+  t.textContent=S.title||'Portfolio';top.textContent=S.title||'Portfolio';if(sub)sub.textContent=S.sub;
+  var f=$('pfScroll').querySelector('.pf-foot span');if(f)f.textContent='© '+new Date().getFullYear()+' '+S.title;
+  save();
+}
+
+/* image processing */
+function readFile(f){return new Promise(function(res,rej){var r=new FileReader();r.onload=function(){res(r.result);};r.onerror=rej;r.readAsDataURL(f);});}
+function loadImg(src){return new Promise(function(res,rej){var im=new Image();im.onload=function(){res(im);};im.onerror=rej;im.src=src;});}
+function processImage(f){
+  return readFile(f).then(function(src){
+    if(/svg|gif/.test(f.type))return src;
+    return loadImg(src).then(function(im){
+      var max=2000,sc=Math.min(1,max/Math.max(im.naturalWidth,im.naturalHeight));
+      if(sc===1&&f.size<900000)return src;
+      var c=document.createElement('canvas');c.width=Math.round(im.naturalWidth*sc);c.height=Math.round(im.naturalHeight*sc);
+      var x=c.getContext('2d');
+      if(f.type==='image/png'){x.drawImage(im,0,0,c.width,c.height);var p=c.toDataURL('image/png');if(p.length<2500000)return p;x.globalCompositeOperation='destination-over';}
+      x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.globalCompositeOperation='source-over';x.drawImage(im,0,0,c.width,c.height);
+      return c.toDataURL('image/jpeg',.9);
+    });
+  });
+}
+function processLogo(f){
+  return readFile(f).then(function(src){
+    if(/svg/.test(f.type)||f.size<200000)return src;
+    return loadImg(src).then(function(im){var s=Math.min(1,256/Math.max(im.naturalWidth,im.naturalHeight));var c=document.createElement('canvas');c.width=Math.round(im.naturalWidth*s);c.height=Math.round(im.naturalHeight*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);return c.toDataURL('image/png');});
+  });
+}
+var targetSlot=null,targetLogo=null;
+function placeFiles(files,start){
+  files=[].filter.call(files,function(f){return /^image\//.test(f.type);});
+  if(!files.length)return;
+  // empty slots first, then slots holding samples; a chosen slot goes first
+  var order=[],i;
+  for(i=0;i<10;i++)if(!S.images[i])order.push(i);
+  for(i=0;i<10;i++)if(S.images[i]&&S.images[i].sample)order.push(i);
+  if(start!=null){order=order.filter(function(k){return k!==start;});order.unshift(start);}
+  var jobs=files.slice(0,order.length).map(function(f,k){return processImage(f).then(function(src){S.images[order[k]]={src:src};});});
+  if(files.length>order.length)toast('10장까지만 들어가요. '+(files.length-order.length)+'장은 제외했어요');
+  $('status').textContent='이미지 처리 중…';
+  Promise.all(jobs).then(function(){renderSlots();commit(true);}).catch(function(){toast('읽을 수 없는 이미지가 있어요. JPG·PNG·WebP를 써 주세요');});
+}
+
+function toast(m){var t=$('toast');t.textContent=m;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(function(){t.hidden=true;},2400);}
+
+function bind(){
+  $('swatches').addEventListener('click',function(e){var b=e.target.closest('[data-p]');if(!b)return;S.bg.preset=b.dataset.p;renderSwatches();commit(false);});
+  $('customColors').addEventListener('input',function(e){var k=e.target.dataset.c;if(k==null)return;if(k==='base')S.bg.custom.base=e.target.value;else S.bg.custom.colors[+k]=e.target.value;commit(false);});
+  $('custom').addEventListener('click',function(e){var b=e.target.closest('[data-ink]');if(!b)return;S.bg.ink=b.dataset.ink;renderSwatches();commit(false);});
+  $('speed').addEventListener('input',function(e){S.bg.speed=+e.target.value;$('speedOut').textContent=S.bg.speed===0?'정지':S.bg.speed.toFixed(1)+'×';commit(false);});
+  $('grain').addEventListener('change',function(e){S.bg.grain=e.target.checked;commit(false);});
+  $('title').addEventListener('input',function(e){S.title=e.target.value;syncText();});
+  $('sub').addEventListener('input',function(e){S.sub=e.target.value;syncText();});
+
+  var slots=$('slots');
+  slots.addEventListener('click',function(e){
+    var rm=e.target.closest('[data-rm]');
+    if(rm){e.stopPropagation();var ri=+rm.dataset.rm;S.images[ri]=null;if(S.sel===ri)S.sel=S.images.findIndex(Boolean);if(S.sel<0)S.sel=null;renderSlots();commit(true);return;}
+    var s=e.target.closest('[data-slot]');if(!s)return;var k=+s.dataset.slot;
+    if(S.images[k]){S.sel=k;renderSlots();return;}
+    targetSlot=k;$('imgFile').value='';$('imgFile').click();
+  });
+  slots.addEventListener('keydown',function(e){var s=e.target.closest('.slot.filled');if(s&&e.target===s&&(e.key==='Enter'||e.key===' ')){e.preventDefault();S.sel=+s.dataset.slot;renderSlots();}});
+  var projT=0;
+  $('proj').addEventListener('input',function(e){
+    var im=S.images[S.sel];if(!im)return;var t=e.target;
+    im.p.edited=true;
+    if(t.dataset.pf)im.p[t.dataset.pf]=t.value;
+    else if(t.dataset.rv!=null)im.p.results[+t.dataset.rv].v=t.value;
+    else if(t.dataset.rl!=null)im.p.results[+t.dataset.rl].l=t.value;
+    else return;
+    clearTimeout(projT);projT=setTimeout(function(){commit(true);if(detail)detail.refresh();var sl=document.querySelector('.slot[data-slot="'+S.sel+'"]');if(sl){var f=normProj(im.p),has=f.name||f.role||f.tasks.length||f.results.length,d=sl.querySelector('.dot');if(has&&!d){d=document.createElement('span');d.className='dot';sl.appendChild(d);}if(!has&&d)d.remove();}},250);
+  });
+  $('proj').addEventListener('click',function(e){
+    if(e.target.closest('#pOpen')){commit(true);if(detail)detail.show(renderedIndex(S.sel));}
+    if(e.target.closest('#pReplace')){targetSlot=S.sel;$('imgFile').value='';$('imgFile').click();}
+  });
+  $('imgFile').addEventListener('change',function(e){var fs=e.target.files;if(!fs.length)return;if(fs.length===1&&targetSlot!=null){processImage(fs[0]).then(function(src){var old=S.images[targetSlot];S.images[targetSlot]={src:src,p:old&&(!old.sample||(old.p&&old.p.edited))?old.p:emptyProj()};S.sel=targetSlot;renderSlots();commit(true);});}else placeFiles(fs,targetSlot);});
+  var dragFrom=null;
+  slots.addEventListener('dragstart',function(e){var s=e.target.closest('.slot.filled');if(!s)return;dragFrom=+s.dataset.slot;s.classList.add('dragging');e.dataTransfer.effectAllowed='move';try{e.dataTransfer.setData('text/plain',String(dragFrom));}catch(_){}});
+  slots.addEventListener('dragend',function(){dragFrom=null;[].forEach.call(slots.children,function(c){c.classList.remove('dragging','over');});});
+  slots.addEventListener('dragover',function(e){var s=e.target.closest('[data-slot]');e.preventDefault();[].forEach.call(slots.children,function(c){c.classList.toggle('over',c===s);});});
+  slots.addEventListener('dragleave',function(e){if(!slots.contains(e.relatedTarget))[].forEach.call(slots.children,function(c){c.classList.remove('over');});});
+  slots.addEventListener('drop',function(e){
+    e.preventDefault();var s=e.target.closest('[data-slot]');var to=s?+s.dataset.slot:null;
+    [].forEach.call(slots.children,function(c){c.classList.remove('over');});
+    if(e.dataTransfer.files&&e.dataTransfer.files.length){
+      if(e.dataTransfer.files.length===1&&to!=null){processImage(e.dataTransfer.files[0]).then(function(src){S.images[to]={src:src};renderSlots();commit(true);});}
+      else placeFiles(e.dataTransfer.files,to);return;}
+    if(dragFrom!=null&&to!=null&&to!==dragFrom){var a=S.images[dragFrom];S.images[dragFrom]=S.images[to];S.images[to]=a;if(S.sel===dragFrom)S.sel=to;else if(S.sel===to)S.sel=dragFrom;renderSlots();commit(true);}
+  });
+  $('clearSamples').addEventListener('click',function(){S.images=S.images.map(function(im){return im&&im.sample?null:im;});S.sel=S.images.findIndex(Boolean);if(S.sel<0)S.sel=null;renderSlots();commit(true);});
+
+  $('tools').addEventListener('input',function(e){var id=e.target.dataset.name;if(!id)return;var t=S.tools.find(function(x){return x.id===id;});t.name=e.target.value;var lb=e.target.parentNode.querySelector('.logo-btn');if(!t.logo){lb.innerHTML=logoInner(t,S.logoMono);lb.classList.toggle('has',!!findIcon(t.name));}commit(true);
+    var have=S.tools.map(function(t){return t.name.toLowerCase();});[].forEach.call(document.querySelectorAll('[data-q]'),function(b){b.disabled=have.indexOf(b.dataset.q.toLowerCase())>-1;});});
+  $('tools').addEventListener('click',function(e){
+    var d=e.target.closest('[data-del]');if(d){S.tools=S.tools.filter(function(x){return x.id!==d.dataset.del;});renderTools();commit(true);return;}
+    var l=e.target.closest('[data-logo]');if(l){targetLogo=l.dataset.logo;$('logoFile').value='';$('logoFile').click();}
+  });
+  $('logoFile').addEventListener('change',function(e){var f=e.target.files[0];if(!f||!targetLogo)return;processLogo(f).then(function(src){var t=S.tools.find(function(x){return x.id===targetLogo;});if(t){t.logo=src;renderTools();commit(true);}});});
+  document.querySelectorAll('[data-lc]').forEach(function(b){b.addEventListener('click',function(){S.logoMono=b.dataset.lc==='mono';renderTools();commit(true);});});
+  $('quick').addEventListener('click',function(e){var b=e.target.closest('[data-q]');if(!b||b.disabled)return;S.tools.push({id:uid(),name:b.dataset.q,logo:null});renderTools();commit(true);});
+  $('addTool').addEventListener('click',function(){var t={id:uid(),name:'',logo:null};S.tools.push(t);renderTools();var inp=document.querySelector('[data-name="'+t.id+'"]');if(inp)inp.focus();});
+
+  function mode(m){$('device').dataset.mode=m;$('dDesk').setAttribute('aria-pressed',String(m==='desktop'));$('dMob').setAttribute('aria-pressed',String(m==='mobile'));}
+  $('dDesk').addEventListener('click',function(){mode('desktop');});
+  $('dMob').addEventListener('click',function(){mode('mobile');});
+  $('focusBtn').addEventListener('click',function(){var on=$('app').classList.toggle('focus');this.setAttribute('aria-pressed',String(on));this.textContent=on?'설정 열기':'미리보기만';});
+
+  $('exportBtn').addEventListener('click',doExport);
+  $('sheetClose').addEventListener('click',function(){$('sheet').hidden=true;});
+  $('copyCode').addEventListener('click',function(){var ta=$('codeOut');var p=navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(ta.value):Promise.reject();p.then(function(){toast('복사했어요');}).catch(function(){ta.focus();ta.select();toast('선택해 두었어요. ⌘C / Ctrl+C로 복사하세요');});});
+}
+
+var downloads=null;
+function doExport(){
+  if(!S.images.some(Boolean)){toast('이미지를 한 장 이상 올려 주세요');return;}
+  if(S.images.some(function(im){return im&&im.sample;}))toast('샘플 이미지도 함께 들어가요');
+  var html=exportHTML(S);
+  var name=(S.title||'portfolio').trim().toLowerCase().replace(/[^\wㄱ-힝]+/g,'-').replace(/^-|-$/g,'')||'portfolio';
+  if(downloads){
+    downloads.save({filename:name+'.html',data:html}).then(function(){toast('저장했어요 — 웹 호스팅에 그대로 올리면 됩니다');}).catch(function(err){
+      if(err&&err.code==='declined')return;
+      if(err&&err.code==='rate_limited'){toast('잠시 후 다시 눌러 주세요');return;}
+      showCode(html);
+    });
+  }else{
+    try{
+      var blob=new Blob([html],{type:'text/html;charset=utf-8'}),url=URL.createObjectURL(blob),link=document.createElement('a');
+      link.href=url;link.download=name+'.html';document.body.appendChild(link);link.click();link.remove();
+      setTimeout(function(){URL.revokeObjectURL(url);},4000);toast('저장했어요 — 웹 호스팅에 그대로 올리면 됩니다');
+    }catch(e){showCode(html);}
+  }
+}
+function showCode(html){$('codeOut').value=html;$('sheet').hidden=false;}
+
+/* boot */
+(function(){
+  var st=document.getElementById('pf-css');st.textContent=PF_CSS;
+  bind();
+  idb().then(function(db){DB=db;return idbGet('state');}).then(function(saved){
+    if(saved&&saved.images&&saved.images.length===10){S=Object.assign(defaults(),saved);S.bg=Object.assign(defaults().bg,saved.bg||{});}
+    else{S.images=S.images.map(function(_,i){return {src:makeSample(i),sample:true,p:sampleProj(i)};});}
+    S.images.forEach(function(im,i){if(im&&!im.p)im.p=im.sample?sampleProj(i):emptyProj();});
+    if(S.sel==null||!S.images[S.sel]){S.sel=S.images.findIndex(Boolean);if(S.sel<0)S.sel=null;}
+    $('title').value=S.title;$('sub').value=S.sub;$('subCount').textContent=S.sub.length+' / 180';
+    $('speed').value=S.bg.speed;$('speedOut').textContent=S.bg.speed===0?'정지':(+S.bg.speed).toFixed(1)+'×';$('grain').checked=S.bg.grain;
+    renderSwatches();renderSlots();renderTools();
+    var cfg=bgCfg(S);bg=pfBg($('pfBg'),{base:cfg.base,colors:cfg.colors,speed:cfg.speed});
+    detail=pfLightbox($('device'));
+    renderPreview(true);
+    $('status').textContent=DB?'자동 저장됨':'저장 안 됨';
+  });
+  try{if(window.claude&&window.claude.use)window.claude.use('downloads').then(function(d){downloads=d;}).catch(function(){});}catch(e){}
+})();
+</script>
+</body>
+</html>
